@@ -227,13 +227,14 @@ class ToolPanel(QWidget):
         
         # 网格大小
         grid_layout.addWidget(QLabel("网格间距:"), 1, 0)
-        self.grid_size_spin = QDoubleSpinBox()
-        self.grid_size_spin.setRange(0.1, 100.0)
-        self.grid_size_spin.setValue(50.0)  # 默认50像素
-        self.grid_size_spin.setSingleStep(1.0)
-        self.grid_size_spin.setSuffix(" 像素")
-        self.grid_size_spin.valueChanged.connect(self.on_grid_size_changed)
-        grid_layout.addWidget(self.grid_size_spin, 1, 1)
+        self.grid_size_combo = QComboBox()
+        self.grid_size_combo.addItem("10%")
+        self.grid_size_combo.addItem("20%")
+        self.grid_size_combo.addItem("25%")
+        self.grid_size_combo.addItem("50%")
+        self.grid_size_combo.setCurrentIndex(0)  # 默认选择10%
+        self.grid_size_combo.currentIndexChanged.connect(self.on_grid_size_changed)
+        grid_layout.addWidget(self.grid_size_combo, 1, 1)
         
         # 网格吸附
         grid_layout.addWidget(QLabel("网格吸附:"), 2, 0)
@@ -243,7 +244,7 @@ class ToolPanel(QWidget):
         grid_layout.addWidget(self.snap_to_grid_check, 2, 1)
         
         # 网格示例
-        grid_layout.addWidget(QLabel("网格示例:"), 3, 0)
+        grid_layout.addWidget(QLabel("网格示例:"), 3, 0, 1, 2)
         self.grid_example = QFrame()
         self.grid_example.setMinimumHeight(100)
         self.grid_example.setFrameShape(QFrame.StyledPanel)
@@ -325,11 +326,23 @@ class ToolPanel(QWidget):
         visible = state == Qt.Checked
         self.grid_visible_changed.emit(visible)
     
-    def on_grid_size_changed(self, value):
+    def on_grid_size_changed(self, index):
         """
         网格间距改变事件处理
         """
-        self.grid_size_changed.emit(value)
+        # 根据索引确定百分比值
+        if index == 0:
+            grid_size = 10.0  # 10%
+        elif index == 1:
+            grid_size = 20.0  # 20%
+        elif index == 2:
+            grid_size = 25.0  # 25%
+        elif index == 3:
+            grid_size = 50.0  # 50%
+        else:
+            grid_size = 10.0  # 默认10%
+        
+        self.grid_size_changed.emit(grid_size)
         
     def on_snap_to_grid_changed(self, state):
         """
@@ -367,7 +380,19 @@ class ToolPanel(QWidget):
         if "visible" in settings:
             self.grid_visible_check.setChecked(settings["visible"])
         if "size" in settings:
-            self.grid_size_spin.setValue(settings["size"])
+            size_value = settings["size"]
+            # 根据百分比值设置选择项
+            if abs(size_value - 10.0) < 0.001:
+                self.grid_size_combo.setCurrentIndex(0)  # 10%
+            elif abs(size_value - 20.0) < 0.001:
+                self.grid_size_combo.setCurrentIndex(1)  # 20%
+            elif abs(size_value - 25.0) < 0.001:
+                self.grid_size_combo.setCurrentIndex(2)  # 25%
+            elif abs(size_value - 50.0) < 0.001:
+                self.grid_size_combo.setCurrentIndex(3)  # 50%
+            else:
+                # 如果没有匹配项，默认选择10%
+                self.grid_size_combo.setCurrentIndex(0)
         if "snap_enabled" in settings:
             self.snap_to_grid_check.setChecked(settings["snap_enabled"])
             

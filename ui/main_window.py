@@ -253,7 +253,7 @@ class MainWindow(QMainWindow):
         if self.settings.contains("grid/size"):
             size = self.settings.value("grid/size", type=float)
             self.canvas.set_grid_size(size)
-            self.tool_panel.grid_size_spin.setValue(size)
+            self.tool_panel.set_grid_settings({"size": size})
             
         if self.settings.contains("grid/snap_enabled"):
             enabled = self.settings.value("grid/snap_enabled", type=bool)
