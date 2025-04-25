@@ -4,7 +4,7 @@
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QTabWidget, QPushButton, 
                             QFileDialog, QLabel, QGridLayout, QSpinBox, 
                             QDoubleSpinBox, QCheckBox, QListWidget, QHBoxLayout,
-                            QGroupBox)
+                            QGroupBox, QFrame, QSizePolicy, QComboBox)
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QPixmap
 
@@ -17,6 +17,10 @@ class ToolPanel(QWidget):
     
     # 自定义信号
     add_image_signal = pyqtSignal(str)  # 添加贴图信号，参数为文件路径
+    grid_visible_changed = pyqtSignal(bool)  # 网格可见性变更信号
+    grid_size_changed = pyqtSignal(float)  # 网格大小变更信号
+    canvas_size_changed = pyqtSignal(int, int)  # 画布大小变更信号，参数为宽度和高度
+    snap_to_grid_changed = pyqtSignal(bool)  # 网格吸附变更信号
     
     def __init__(self, parent=None):
         super(ToolPanel, self).__init__(parent)
@@ -45,6 +49,11 @@ class ToolPanel(QWidget):
         self.layer_tab = QWidget()
         self.init_layer_tab()
         self.tab_widget.addTab(self.layer_tab, "层级管理")
+        
+        # 视图设置面板
+        self.view_settings_tab = QWidget()
+        self.init_view_settings_tab()
+        self.tab_widget.addTab(self.view_settings_tab, "视图设置")
         
         layout.addWidget(self.tab_widget)
         self.setLayout(layout)
@@ -153,6 +162,136 @@ class ToolPanel(QWidget):
         
         layout.addLayout(btn_layout)
         
+    def init_view_settings_tab(self):
+        """
+        初始化视图设置面板
+        """
+        layout = QVBoxLayout(self.view_settings_tab)
+        
+        # 画布大小设置组
+        canvas_size_group = QGroupBox("画布大小")
+        canvas_layout = QGridLayout()
+        
+        # 预设尺寸选择
+        canvas_layout.addWidget(QLabel("预设尺寸:"), 0, 0)
+        self.canvas_size_combo = QComboBox()
+        self.canvas_size_combo.addItem("自定义")
+        self.canvas_size_combo.addItem("512 x 512")
+        self.canvas_size_combo.addItem("1024 x 1024")
+        self.canvas_size_combo.addItem("2048 x 2048")
+        self.canvas_size_combo.addItem("4096 x 4096")
+        self.canvas_size_combo.currentIndexChanged.connect(self.on_canvas_size_preset_changed)
+        canvas_layout.addWidget(self.canvas_size_combo, 0, 1)
+        
+        # 自定义宽度和高度
+        canvas_layout.addWidget(QLabel("宽度:"), 1, 0)
+        self.canvas_width_spin = QSpinBox()
+        self.canvas_width_spin.setRange(100, 10000)
+        self.canvas_width_spin.setValue(800)
+        self.canvas_width_spin.setSingleStep(100)
+        self.canvas_width_spin.setSuffix(" 像素")
+        canvas_layout.addWidget(self.canvas_width_spin, 1, 1)
+        
+        canvas_layout.addWidget(QLabel("高度:"), 2, 0)
+        self.canvas_height_spin = QSpinBox()
+        self.canvas_height_spin.setRange(100, 10000)
+        self.canvas_height_spin.setValue(600)
+        self.canvas_height_spin.setSingleStep(100)
+        self.canvas_height_spin.setSuffix(" 像素")
+        canvas_layout.addWidget(self.canvas_height_spin, 2, 1)
+        
+        # 应用按钮
+        self.apply_canvas_size_btn = QPushButton("应用画布大小")
+        self.apply_canvas_size_btn.clicked.connect(self.on_apply_canvas_size)
+        canvas_layout.addWidget(self.apply_canvas_size_btn, 3, 0, 1, 2)
+        
+        canvas_size_group.setLayout(canvas_layout)
+        layout.addWidget(canvas_size_group)
+        
+        # 添加一个分隔线
+        line1 = QFrame()
+        line1.setFrameShape(QFrame.HLine)
+        line1.setFrameShadow(QFrame.Sunken)
+        layout.addWidget(line1)
+        
+        # 网格设置组
+        grid_group = QGroupBox("网格设置")
+        grid_layout = QGridLayout()
+        
+        # 网格可见性
+        grid_layout.addWidget(QLabel("显示网格:"), 0, 0)
+        self.grid_visible_check = QCheckBox()
+        self.grid_visible_check.setChecked(True)
+        self.grid_visible_check.stateChanged.connect(self.on_grid_visible_changed)
+        grid_layout.addWidget(self.grid_visible_check, 0, 1)
+        
+        # 网格大小
+        grid_layout.addWidget(QLabel("网格间距:"), 1, 0)
+        self.grid_size_spin = QDoubleSpinBox()
+        self.grid_size_spin.setRange(0.1, 100.0)
+        self.grid_size_spin.setValue(50.0)  # 默认50像素
+        self.grid_size_spin.setSingleStep(1.0)
+        self.grid_size_spin.setSuffix(" 像素")
+        self.grid_size_spin.valueChanged.connect(self.on_grid_size_changed)
+        grid_layout.addWidget(self.grid_size_spin, 1, 1)
+        
+        # 网格吸附
+        grid_layout.addWidget(QLabel("网格吸附:"), 2, 0)
+        self.snap_to_grid_check = QCheckBox()
+        self.snap_to_grid_check.setChecked(True)
+        self.snap_to_grid_check.stateChanged.connect(self.on_snap_to_grid_changed)
+        grid_layout.addWidget(self.snap_to_grid_check, 2, 1)
+        
+        # 网格示例
+        grid_layout.addWidget(QLabel("网格示例:"), 3, 0)
+        self.grid_example = QFrame()
+        self.grid_example.setMinimumHeight(100)
+        self.grid_example.setFrameShape(QFrame.StyledPanel)
+        self.grid_example.setStyleSheet("background-color: #f0f0f0;")
+        grid_layout.addWidget(self.grid_example, 4, 0, 1, 2)
+        
+        grid_group.setLayout(grid_layout)
+        layout.addWidget(grid_group)
+        
+        # 添加一个分隔线
+        line2 = QFrame()
+        line2.setFrameShape(QFrame.HLine)
+        line2.setFrameShadow(QFrame.Sunken)
+        layout.addWidget(line2)
+        
+        # 其他视图设置（未来可以添加）
+        
+        # 添加占位空间
+        layout.addStretch()
+        
+    def on_canvas_size_preset_changed(self, index):
+        """
+        预设画布大小改变事件处理
+        """
+        if index == 0:  # 自定义
+            return
+        
+        # 根据预设值设置宽度和高度
+        if index == 1:  # 512 x 512
+            width = height = 512
+        elif index == 2:  # 1024 x 1024
+            width = height = 1024
+        elif index == 3:  # 2048 x 2048
+            width = height = 2048
+        elif index == 4:  # 4096 x 4096
+            width = height = 4096
+        
+        self.canvas_width_spin.setValue(width)
+        self.canvas_height_spin.setValue(height)
+        
+    def on_apply_canvas_size(self):
+        """
+        应用画布大小按钮点击事件处理
+        """
+        width = self.canvas_width_spin.value()
+        height = self.canvas_height_spin.value()
+        self.canvas_size_changed.emit(width, height)
+        
     def on_add_image_clicked(self):
         """
         添加贴图按钮点击事件处理
@@ -179,6 +318,26 @@ class ToolPanel(QWidget):
             # 发送添加贴图信号
             self.add_image_signal.emit(file_path)
     
+    def on_grid_visible_changed(self, state):
+        """
+        网格可见性改变事件处理
+        """
+        visible = state == Qt.Checked
+        self.grid_visible_changed.emit(visible)
+    
+    def on_grid_size_changed(self, value):
+        """
+        网格间距改变事件处理
+        """
+        self.grid_size_changed.emit(value)
+        
+    def on_snap_to_grid_changed(self, state):
+        """
+        网格吸附改变事件处理
+        """
+        enabled = state == Qt.Checked
+        self.snap_to_grid_changed.emit(enabled)
+    
     def update_property_values(self, image_item):
         """
         更新属性编辑面板的值
@@ -200,3 +359,36 @@ class ToolPanel(QWidget):
         self.layer_list.clear()
         for item in items:
             self.layer_list.addItem(item.name)
+            
+    def set_grid_settings(self, settings):
+        """
+        设置网格属性控件
+        """
+        if "visible" in settings:
+            self.grid_visible_check.setChecked(settings["visible"])
+        if "size" in settings:
+            self.grid_size_spin.setValue(settings["size"])
+        if "snap_enabled" in settings:
+            self.snap_to_grid_check.setChecked(settings["snap_enabled"])
+            
+    def set_canvas_size(self, width, height):
+        """
+        设置画布大小控件
+        """
+        self.canvas_width_spin.setValue(width)
+        self.canvas_height_spin.setValue(height)
+        
+        # 尝试匹配预设值
+        if width == height:
+            if width == 512:
+                self.canvas_size_combo.setCurrentIndex(1)
+            elif width == 1024:
+                self.canvas_size_combo.setCurrentIndex(2)
+            elif width == 2048:
+                self.canvas_size_combo.setCurrentIndex(3)
+            elif width == 4096:
+                self.canvas_size_combo.setCurrentIndex(4)
+            else:
+                self.canvas_size_combo.setCurrentIndex(0)
+        else:
+            self.canvas_size_combo.setCurrentIndex(0)

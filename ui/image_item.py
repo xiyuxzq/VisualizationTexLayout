@@ -45,6 +45,10 @@ class ImageItem(QGraphicsItem):
         self.dragging = False
         self.drag_start = QPointF()
         
+        # 网格吸附设置
+        self.snap_to_grid = True
+        self.grid_size = 50
+        
     def boundingRect(self):
         """
         返回贴图项的边界矩形
@@ -85,7 +89,17 @@ class ImageItem(QGraphicsItem):
         鼠标移动事件处理
         """
         if self.dragging:
+            # 让基类处理移动
             super(ImageItem, self).mouseMoveEvent(event)
+            
+            # 如果启用了网格吸附，将位置吸附到网格
+            if self.snap_to_grid:
+                # 获取当前位置
+                current_pos = self.pos()
+                # 计算吸附位置
+                snapped_pos = self.snap_position(current_pos)
+                # 设置吸附后的位置
+                self.setPos(snapped_pos)
         
     def mouseReleaseEvent(self, event):
         """
@@ -93,6 +107,13 @@ class ImageItem(QGraphicsItem):
         """
         if event.button() == Qt.LeftButton:
             self.dragging = False
+            
+            # 如果启用了网格吸附，确保最终位置吸附到网格
+            if self.snap_to_grid:
+                current_pos = self.pos()
+                snapped_pos = self.snap_position(current_pos)
+                self.setPos(snapped_pos)
+                
         super(ImageItem, self).mouseReleaseEvent(event)
         
     def resize(self, width, height):
@@ -112,6 +133,27 @@ class ImageItem(QGraphicsItem):
         self.scale_x = scale_x
         self.scale_y = scale_y
         self.update()
+        
+    def set_snap_to_grid(self, enabled, grid_size=None):
+        """
+        设置网格吸附
+        """
+        self.snap_to_grid = enabled
+        if grid_size is not None:
+            self.grid_size = grid_size
+            
+    def snap_position(self, pos):
+        """
+        将位置吸附到网格
+        """
+        if not self.snap_to_grid:
+            return pos
+        
+        # 计算最近的网格点
+        x = round(pos.x() / self.grid_size) * self.grid_size
+        y = round(pos.y() / self.grid_size) * self.grid_size
+        
+        return QPointF(x, y)
         
     def to_dict(self):
         """

@@ -141,6 +141,20 @@ class MainWindow(QMainWindow):
         fit_view_action.triggered.connect(self.canvas.fit_in_view)
         view_menu.addAction(fit_view_action)
         
+        view_menu.addSeparator()
+        
+        show_grid_action = QAction("显示网格", self)
+        show_grid_action.setCheckable(True)
+        show_grid_action.setChecked(True)
+        show_grid_action.triggered.connect(lambda checked: self.canvas.set_grid_visible(checked))
+        view_menu.addAction(show_grid_action)
+        
+        snap_to_grid_action = QAction("网格吸附", self)
+        snap_to_grid_action.setCheckable(True)
+        snap_to_grid_action.setChecked(True)
+        snap_to_grid_action.triggered.connect(lambda checked: self.canvas.set_snap_to_grid(checked))
+        view_menu.addAction(snap_to_grid_action)
+        
         # 贴图菜单
         image_menu = self.menuBar().addMenu("贴图")
         
@@ -196,12 +210,27 @@ class MainWindow(QMainWindow):
         fit_view_action.triggered.connect(self.canvas.fit_in_view)
         tool_bar.addAction(fit_view_action)
         
+        tool_bar.addSeparator()
+        
+        # 添加贴图操作
+        add_image_action = QAction("添加贴图", self)
+        add_image_action.triggered.connect(self.tool_panel.on_add_image_clicked)
+        tool_bar.addAction(add_image_action)
+        
     def connect_signals(self):
         """
         连接信号和槽
         """
         # 连接添加贴图信号
         self.tool_panel.add_image_signal.connect(self.add_image)
+        
+        # 连接网格设置信号
+        self.tool_panel.grid_visible_changed.connect(self.canvas.set_grid_visible)
+        self.tool_panel.grid_size_changed.connect(self.canvas.set_grid_size)
+        self.tool_panel.snap_to_grid_changed.connect(self.canvas.set_snap_to_grid)
+        
+        # 连接画布大小设置信号
+        self.tool_panel.canvas_size_changed.connect(self.canvas.set_canvas_size)
         
     def init_settings(self):
         """
@@ -214,6 +243,29 @@ class MainWindow(QMainWindow):
             self.restoreGeometry(self.settings.value("window/geometry"))
         if self.settings.contains("window/state"):
             self.restoreState(self.settings.value("window/state"))
+        
+        # 读取上次的网格设置
+        if self.settings.contains("grid/visible"):
+            visible = self.settings.value("grid/visible", type=bool)
+            self.canvas.set_grid_visible(visible)
+            self.tool_panel.grid_visible_check.setChecked(visible)
+        
+        if self.settings.contains("grid/size"):
+            size = self.settings.value("grid/size", type=float)
+            self.canvas.set_grid_size(size)
+            self.tool_panel.grid_size_spin.setValue(size)
+            
+        if self.settings.contains("grid/snap_enabled"):
+            enabled = self.settings.value("grid/snap_enabled", type=bool)
+            self.canvas.set_snap_to_grid(enabled)
+            self.tool_panel.snap_to_grid_check.setChecked(enabled)
+        
+        # 读取上次的画布大小
+        if self.settings.contains("canvas/width") and self.settings.contains("canvas/height"):
+            width = self.settings.value("canvas/width", type=int)
+            height = self.settings.value("canvas/height", type=int)
+            self.canvas.set_canvas_size(width, height)
+            self.tool_panel.set_canvas_size(width, height)
             
     def closeEvent(self, event):
         """
@@ -223,6 +275,17 @@ class MainWindow(QMainWindow):
         self.settings.setValue("window/geometry", self.saveGeometry())
         self.settings.setValue("window/state", self.saveState())
         
+        # 保存网格设置
+        grid_settings = self.canvas.get_grid_settings()
+        self.settings.setValue("grid/visible", grid_settings["visible"])
+        self.settings.setValue("grid/size", grid_settings["size"])
+        self.settings.setValue("grid/snap_enabled", grid_settings["snap_enabled"])
+        
+        # 保存画布大小
+        canvas_rect = self.canvas.scene.sceneRect()
+        self.settings.setValue("canvas/width", int(canvas_rect.width()))
+        self.settings.setValue("canvas/height", int(canvas_rect.height()))
+        
         event.accept()
     
     def add_image(self, filepath):
@@ -231,6 +294,8 @@ class MainWindow(QMainWindow):
         """
         if os.path.exists(filepath):
             image_item = ImageItem(filepath)
+            # 设置网格吸附属性
+            image_item.set_snap_to_grid(self.canvas.snap_to_grid, self.canvas.grid_size)
             self.canvas.add_image(image_item)
             self.status_bar.showMessage(f"已添加贴图: {filepath}")
             return image_item
@@ -268,7 +333,14 @@ class MainWindow(QMainWindow):
                 if "canvas" in layout_data:
                     width = layout_data["canvas"].get("width", 800)
                     height = layout_data["canvas"].get("height", 600)
-                    self.canvas.scene.setSceneRect(0, 0, width, height)
+                    self.canvas.set_canvas_size(width, height)
+                    self.tool_panel.set_canvas_size(width, height)
+                
+                # 设置网格属性
+                if "grid" in layout_data:
+                    grid_settings = layout_data["grid"]
+                    self.canvas.set_grid_settings(grid_settings)
+                    self.tool_panel.set_grid_settings(grid_settings)
                 
                 # 加载贴图
                 if "images" in layout_data:
@@ -343,6 +415,7 @@ class MainWindow(QMainWindow):
                     "width": self.canvas.scene.width(),
                     "height": self.canvas.scene.height()
                 },
+                "grid": self.canvas.get_grid_settings(),
                 "images": []
             }
             

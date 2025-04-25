@@ -64,11 +64,13 @@ VisualizationTexLayout/
 - **主要类**:
   - `CanvasWidget`: 继承自QGraphicsView，管理QGraphicsScene
 - **主要方法**:
+  - `drawBackground()`: 绘制背景和网格
   - `wheelEvent()`: 处理鼠标滚轮事件，实现缩放功能
   - `resizeEvent()`: 处理窗口大小改变事件
   - `reset_view()`, `fit_in_view()`: 视图控制方法
   - `add_image()`: 添加贴图项到场景
   - `clear_scene()`: 清空场景
+  - `set_grid_visible()`, `set_grid_size()`: 设置网格属性
 - **调用关系**:
   - 由 `MainWindow` 创建和管理
   - 接收并显示 `ImageItem` 对象
@@ -83,12 +85,14 @@ VisualizationTexLayout/
   - `init_add_image_tab()`: 初始化添加贴图标签页
   - `init_property_tab()`: 初始化属性编辑标签页
   - `init_layer_tab()`: 初始化层级管理标签页
+  - `init_view_settings_tab()`: 初始化视图设置标签页
   - `on_add_image_clicked()`: 处理添加贴图按钮点击事件
+  - `on_grid_visible_changed()`, `on_grid_size_changed()`: 处理网格设置变更
   - `update_property_values()`: 更新属性编辑面板的值
   - `update_layer_list()`: 更新层级列表
 - **调用关系**:
   - 由 `MainWindow` 创建和管理
-  - 发出 `add_image_signal` 信号，由 `MainWindow` 处理
+  - 发出 `add_image_signal`、`grid_visible_changed` 和 `grid_size_changed` 信号，由 `MainWindow` 处理
 
 #### `ui/image_item.py`
 
@@ -153,7 +157,7 @@ VisualizationTexLayout/
 2. `MainWindow.save_file()` 或 `MainWindow.save_file_as()` 被调用
 3. 如果是首次保存或"另存为"，弹出文件保存对话框
 4. 用户选择保存路径
-5. `MainWindow.save_layout_to_file()` 收集所有贴图项的数据
+5. `MainWindow.save_layout_to_file()` 收集所有贴图项的数据和网格设置
 6. 将所有贴图项转换为字典格式，构建布局数据
 7. 将布局数据保存为JSON文件
 8. 更新状态栏显示保存成功信息
@@ -164,11 +168,19 @@ VisualizationTexLayout/
 2. `MainWindow.open_file()` 打开文件选择对话框
 3. 用户选择布局文件
 4. `MainWindow` 读取并解析布局数据
-5. `MainWindow` 清空当前画布并设置新的画布大小
+5. `MainWindow` 清空当前画布并设置新的画布大小和网格设置
 6. 对于布局数据中的每个贴图:
    - 调用 `MainWindow.add_image()` 创建 `ImageItem`
    - 设置贴图的位置、缩放、旋转等属性
 7. 更新状态栏显示加载成功信息
+
+### 4.5 网格设置流程
+
+1. 用户在右侧"视图设置"面板调整网格设置
+2. `ToolPanel` 发出 `grid_visible_changed` 或 `grid_size_changed` 信号
+3. `MainWindow` 通过连接的槽函数将设置转发给 `CanvasWidget`
+4. `CanvasWidget` 更新网格属性并重绘视图
+5. 用户看到实时更新的网格效果
 
 ## 5. 代码调用流程图
 
@@ -257,7 +269,8 @@ flowchart TD
     C --> C1[用户选择保存路径]
     C1 --> D
     D --> E[收集所有贴图项]
-    E --> F[构建布局数据]
+    E --> E1[获取网格设置]
+    E1 --> F[构建布局数据]
     F --> G[写入JSON文件]
     G --> H[更新状态栏信息]
 ```
@@ -271,20 +284,47 @@ flowchart TD
     C --> D[读取并解析JSON数据]
     D --> E[清空当前画布]
     E --> F[设置新的画布大小]
-    F --> G[循环处理贴图数据]
+    F --> F1[应用网格设置]
+    F1 --> G[循环处理贴图数据]
     G --> H[创建ImageItem]
     H --> I[设置贴图属性]
     I --> J[添加到画布]
     J --> K[更新状态栏信息]
 ```
 
-### 5.6 组件交互关系图
+### 5.6 网格设置流程图
+
+```mermaid
+sequenceDiagram
+    participant User as 用户
+    participant TP as ToolPanel
+    participant MW as MainWindow
+    participant CW as CanvasWidget
+    
+    User->>TP: 调整网格设置
+    alt 调整网格可见性
+        TP->>TP: on_grid_visible_changed()
+        TP->>MW: 发送grid_visible_changed信号
+        MW->>CW: 调用set_grid_visible()
+    else 调整网格间距
+        TP->>TP: on_grid_size_changed()
+        TP->>MW: 发送grid_size_changed信号
+        MW->>CW: 调用set_grid_size()
+    end
+    CW->>CW: 更新网格属性
+    CW->>CW: 重绘视图
+    CW->>User: 显示更新后的网格
+```
+
+### 5.7 组件交互关系图
 
 ```mermaid
 graph TD
     subgraph "信号-槽通信"
-        TP_Signal[ToolPanel: add_image_signal] -->|信号| MW_Slot[MainWindow: add_image]
-        MW_Slot -->|调用| II_Create[创建ImageItem]
+        TP_Signal1[ToolPanel: add_image_signal] -->|信号| MW_Slot1[MainWindow: add_image]
+        TP_Signal2[ToolPanel: grid_visible_changed] -->|信号| MW_Slot2[MainWindow -> CanvasWidget: set_grid_visible]
+        TP_Signal3[ToolPanel: grid_size_changed] -->|信号| MW_Slot3[MainWindow -> CanvasWidget: set_grid_size]
+        MW_Slot1 -->|调用| II_Create[创建ImageItem]
         II_Create -->|调用| CW_Add[CanvasWidget: add_image]
     end
     
@@ -298,15 +338,16 @@ graph TD
     subgraph "文件操作"
         MW_File[MainWindow文件操作] -->|使用| JSON[JSON序列化]
         II_Dict[ImageItem.to_dict] -->|提供数据| JSON
+        CW_Grid[CanvasWidget.get_grid_settings] -->|提供数据| JSON
     end
     
     classDef signal fill:#f96,stroke:#333,stroke-width:1px;
     classDef object fill:#9cf,stroke:#333,stroke-width:1px;
     classDef file fill:#9f9,stroke:#333,stroke-width:1px;
     
-    class TP_Signal,MW_Slot signal;
+    class TP_Signal1,TP_Signal2,TP_Signal3,MW_Slot1,MW_Slot2,MW_Slot3 signal;
     class MW,CW,TP,Scene,II object;
-    class MW_File,JSON,II_Dict file;
+    class MW_File,JSON,II_Dict,CW_Grid file;
 ```
 
 ## 6. 开发思路
@@ -318,8 +359,8 @@ graph TD
   - `core` 包中的类负责数据处理和业务逻辑
   
 - **信号-槽机制**: 使用Qt的信号-槽机制实现组件间的松耦合通信
-  - `ToolPanel` 发出添加贴图信号
-  - `MainWindow` 接收信号并处理
+  - `ToolPanel` 发出添加贴图信号和网格设置信号
+  - `MainWindow` 接收信号并处理或转发
   - `LayoutManager` 发出布局加载/保存完成信号
 
 - **组件化设计**: 将不同功能封装为独立的组件，便于维护和扩展
@@ -349,6 +390,7 @@ graph TD
 
 ### 第二阶段：贴图操作功能
 
+- [x] 添加网格背景，支持在右侧面板设置网格间距
 - [ ] 完善拖拽移动功能，添加网格吸附
 - [ ] 实现更精确的缩放功能，包括保持纵横比
 - [ ] 实现旋转功能
@@ -397,15 +439,46 @@ graph TD
 - 在MainWindow中收集所有贴图项的字典表示，构建布局数据
 - 使用json.dump将布局数据写入文件
 
+### 8.4 网格绘制实现
+
+**问题**: 实现可调整间距的网格背景，并保持在视图变换(缩放、平移)时的正确显示
+
+**解决方案**:
+- 重写QGraphicsView的drawBackground方法来绘制网格
+- 使用视图到场景的变换矩阵计算网格线的位置
+- 通过QSettings保存和恢复网格设置
+- 实现信号-槽机制，使右侧面板的设置实时应用到网格显示
+
+### 8.5 网格绘制浮点数精度问题
+
+**问题**: 网格绘制过程中出现类型错误，在使用range()函数时试图将浮点数grid_size作为步长参数，导致TypeError异常
+
+**解决方案**:
+- 替换range()函数为while循环，以支持浮点型的grid_size
+- 使用math.floor()函数正确计算网格起始位置，以支持非整数网格间距
+- 通过增量方式绘制网格线，确保即使是小数值的网格间距也能正确显示
+- 增加对画布变换的支持，保证在任何缩放比例下网格都能保持正确的间距
+
 ---
 
 ## 9. 版本历史
 
-### v0.1.0 (当前版本)
+### v0.1.0
 - 初始版本
 - 实现基本界面结构
 - 实现添加贴图、拖拽移动功能
 - 实现文件保存/加载功能
+
+### v0.2.0
+- 添加网格背景功能
+- 支持在右侧面板设置网格间距
+- 支持网格显示开关
+- 保存和加载网格设置
+
+### v0.2.1 (当前版本)
+- 修复网格绘制时的浮点数精度问题
+- 优化网格绘制算法，支持任意精度的网格间距设置
+- 改进网格起始位置计算，确保网格线对齐
 
 ---
 
