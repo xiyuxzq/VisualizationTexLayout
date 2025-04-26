@@ -61,9 +61,6 @@ class MainWindow(QMainWindow):
         # 创建菜单栏
         self.create_menu_bar()
         
-        # 创建工具栏
-        self.create_tool_bar()
-        
         # 创建状态栏
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
@@ -171,52 +168,6 @@ class MainWindow(QMainWindow):
         about_action.triggered.connect(self.show_about_dialog)
         help_menu.addAction(about_action)
         
-    def create_tool_bar(self):
-        """
-        创建工具栏
-        """
-        tool_bar = QToolBar("工具栏", self)
-        self.addToolBar(tool_bar)
-        
-        # 文件操作
-        new_action = QAction("新建", self)
-        new_action.triggered.connect(self.new_file)
-        tool_bar.addAction(new_action)
-        
-        open_action = QAction("打开", self)
-        open_action.triggered.connect(self.open_file)
-        tool_bar.addAction(open_action)
-        
-        save_action = QAction("保存", self)
-        save_action.triggered.connect(self.save_file)
-        tool_bar.addAction(save_action)
-        
-        tool_bar.addSeparator()
-        
-        # 视图操作
-        zoom_in_action = QAction("放大", self)
-        zoom_in_action.triggered.connect(lambda: self.canvas.scale(1.2, 1.2))
-        tool_bar.addAction(zoom_in_action)
-        
-        zoom_out_action = QAction("缩小", self)
-        zoom_out_action.triggered.connect(lambda: self.canvas.scale(1/1.2, 1/1.2))
-        tool_bar.addAction(zoom_out_action)
-        
-        reset_view_action = QAction("重置视图", self)
-        reset_view_action.triggered.connect(self.canvas.reset_view)
-        tool_bar.addAction(reset_view_action)
-        
-        fit_view_action = QAction("适应视图", self)
-        fit_view_action.triggered.connect(self.canvas.fit_in_view)
-        tool_bar.addAction(fit_view_action)
-        
-        tool_bar.addSeparator()
-        
-        # 添加贴图操作
-        add_image_action = QAction("添加贴图", self)
-        add_image_action.triggered.connect(self.tool_panel.on_add_image_clicked)
-        tool_bar.addAction(add_image_action)
-        
     def connect_signals(self):
         """
         连接信号和槽
@@ -235,6 +186,15 @@ class MainWindow(QMainWindow):
         
         # 连接画布大小设置信号
         self.tool_panel.canvas_size_changed.connect(self.canvas.set_canvas_size)
+        
+        # 连接右侧主操作按钮
+        self.tool_panel.new_btn.clicked.connect(self.new_file)
+        self.tool_panel.open_btn.clicked.connect(self.open_file)
+        self.tool_panel.save_btn.clicked.connect(self.save_file)
+        self.tool_panel.zoom_in_btn.clicked.connect(lambda: self.canvas.scale(1.2, 1.2))
+        self.tool_panel.zoom_out_btn.clicked.connect(lambda: self.canvas.scale(1/1.2, 1/1.2))
+        self.tool_panel.reset_view_btn.clicked.connect(self.canvas.reset_view)
+        self.tool_panel.fit_view_btn.clicked.connect(self.canvas.fit_in_view)
         
     def init_settings(self):
         """
@@ -314,6 +274,8 @@ class MainWindow(QMainWindow):
         # 清空画布
         self.canvas.clear_scene()
         self.current_file = None
+        self.canvas.set_canvas_size(1024, 1024)
+        self.tool_panel.set_canvas_size(1024, 1024)
         self.status_bar.showMessage("已创建新文件")
     
     def open_file(self):
@@ -335,8 +297,8 @@ class MainWindow(QMainWindow):
                 
                 # 设置画布大小
                 if "canvas" in layout_data:
-                    width = layout_data["canvas"].get("width", 800)
-                    height = layout_data["canvas"].get("height", 600)
+                    width = layout_data["canvas"].get("width", 1024)
+                    height = layout_data["canvas"].get("height", 1024)
                     self.canvas.set_canvas_size(width, height)
                     self.tool_panel.set_canvas_size(width, height)
                 

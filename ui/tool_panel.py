@@ -42,17 +42,8 @@ class ToolPanel(QWidget):
         # 添加贴图面板
         self.add_image_tab = QWidget()
         self.init_add_image_tab()
-        self.tab_widget.addTab(self.add_image_tab, "添加贴图")
+        self.tab_widget.addTab(self.add_image_tab, "工具")
         
-        # 属性编辑面板
-        self.property_tab = QWidget()
-        self.init_property_tab()
-        self.tab_widget.addTab(self.property_tab, "属性编辑")
-        
-        # 层级管理面板
-        self.layer_tab = QWidget()
-        self.init_layer_tab()
-        self.tab_widget.addTab(self.layer_tab, "层级管理")
         
         # 视图设置面板
         self.view_settings_tab = QWidget()
@@ -67,12 +58,33 @@ class ToolPanel(QWidget):
         初始化添加贴图面板
         """
         layout = QVBoxLayout(self.add_image_tab)
-        
-        # 添加贴图按钮
+
+        # 主操作按钮区放入GroupBox
+        op_group = QGroupBox("常用操作")
+        op_layout = QGridLayout()
+        self.new_btn = QPushButton("新建")
+        self.open_btn = QPushButton("打开")
+        self.save_btn = QPushButton("保存")
+        self.zoom_in_btn = QPushButton("放大")
+        self.zoom_out_btn = QPushButton("缩小")
+        self.reset_view_btn = QPushButton("重置视图")
+        self.fit_view_btn = QPushButton("适应视图")
         self.add_image_btn = QPushButton("添加贴图")
+        # 两行布局
+        op_layout.addWidget(self.new_btn, 0, 0)
+        op_layout.addWidget(self.open_btn, 0, 1)
+        op_layout.addWidget(self.save_btn, 0, 2)
+        op_layout.addWidget(self.add_image_btn, 0, 3)
+        op_layout.addWidget(self.zoom_in_btn, 1, 0)
+        op_layout.addWidget(self.zoom_out_btn, 1, 1)
+        op_layout.addWidget(self.reset_view_btn, 1, 2)
+        op_layout.addWidget(self.fit_view_btn, 1, 3)
+        op_group.setLayout(op_layout)
+        layout.addWidget(op_group)
+
+        # 连接信号（槽函数待主窗口绑定）
         self.add_image_btn.clicked.connect(self.on_add_image_clicked)
-        layout.addWidget(self.add_image_btn)
-        
+
         # 最近添加的贴图预览
         self.preview_group = QGroupBox("贴图预览")
         preview_layout = QVBoxLayout()
@@ -82,89 +94,11 @@ class ToolPanel(QWidget):
         preview_layout.addWidget(self.preview_label)
         self.preview_group.setLayout(preview_layout)
         layout.addWidget(self.preview_group)
-        
+
         # 添加占位空间
         layout.addStretch()
         
-    def init_property_tab(self):
-        """
-        初始化属性编辑面板
-        """
-        layout = QGridLayout(self.property_tab)
-        
-        # 位置编辑
-        layout.addWidget(QLabel("X 坐标:"), 0, 0)
-        self.x_spin = QSpinBox()
-        self.x_spin.setRange(-10000, 10000)
-        layout.addWidget(self.x_spin, 0, 1)
-        
-        layout.addWidget(QLabel("Y 坐标:"), 1, 0)
-        self.y_spin = QSpinBox()
-        self.y_spin.setRange(-10000, 10000)
-        layout.addWidget(self.y_spin, 1, 1)
-        
-        # 大小编辑
-        layout.addWidget(QLabel("宽度:"), 2, 0)
-        self.width_spin = QSpinBox()
-        self.width_spin.setRange(1, 10000)
-        layout.addWidget(self.width_spin, 2, 1)
-        
-        layout.addWidget(QLabel("高度:"), 3, 0)
-        self.height_spin = QSpinBox()
-        self.height_spin.setRange(1, 10000)
-        layout.addWidget(self.height_spin, 3, 1)
-        
-        # 缩放编辑
-        layout.addWidget(QLabel("X 缩放:"), 4, 0)
-        self.scale_x_spin = QDoubleSpinBox()
-        self.scale_x_spin.setRange(0.1, 10.0)
-        self.scale_x_spin.setSingleStep(0.1)
-        layout.addWidget(self.scale_x_spin, 4, 1)
-        
-        layout.addWidget(QLabel("Y 缩放:"), 5, 0)
-        self.scale_y_spin = QDoubleSpinBox()
-        self.scale_y_spin.setRange(0.1, 10.0)
-        self.scale_y_spin.setSingleStep(0.1)
-        layout.addWidget(self.scale_y_spin, 5, 1)
-        
-        # 旋转编辑
-        layout.addWidget(QLabel("旋转:"), 6, 0)
-        self.rotation_spin = QSpinBox()
-        self.rotation_spin.setRange(0, 359)
-        layout.addWidget(self.rotation_spin, 6, 1)
-        
-        # 可见性编辑
-        layout.addWidget(QLabel("可见:"), 7, 0)
-        self.visible_check = QCheckBox()
-        self.visible_check.setChecked(True)
-        layout.addWidget(self.visible_check, 7, 1)
-        
-        # 添加占位空间
-        layout.setRowStretch(8, 1)
-        
-    def init_layer_tab(self):
-        """
-        初始化层级管理面板
-        """
-        layout = QVBoxLayout(self.layer_tab)
-        
-        # 层级列表
-        self.layer_list = QListWidget()
-        layout.addWidget(self.layer_list)
-        
-        # 层级操作按钮
-        btn_layout = QHBoxLayout()
-        self.move_up_btn = QPushButton("上移")
-        self.move_down_btn = QPushButton("下移")
-        self.move_top_btn = QPushButton("置顶")
-        self.move_bottom_btn = QPushButton("置底")
-        
-        btn_layout.addWidget(self.move_up_btn)
-        btn_layout.addWidget(self.move_down_btn)
-        btn_layout.addWidget(self.move_top_btn)
-        btn_layout.addWidget(self.move_bottom_btn)
-        
-        layout.addLayout(btn_layout)
+    
         
     def init_view_settings_tab(self):
         """
@@ -191,7 +125,7 @@ class ToolPanel(QWidget):
         canvas_layout.addWidget(QLabel("宽度:"), 1, 0)
         self.canvas_width_spin = QSpinBox()
         self.canvas_width_spin.setRange(100, 10000)
-        self.canvas_width_spin.setValue(800)
+        self.canvas_width_spin.setValue(1024)
         self.canvas_width_spin.setSingleStep(100)
         self.canvas_width_spin.setSuffix(" 像素")
         canvas_layout.addWidget(self.canvas_width_spin, 1, 1)
@@ -199,7 +133,7 @@ class ToolPanel(QWidget):
         canvas_layout.addWidget(QLabel("高度:"), 2, 0)
         self.canvas_height_spin = QSpinBox()
         self.canvas_height_spin.setRange(100, 10000)
-        self.canvas_height_spin.setValue(600)
+        self.canvas_height_spin.setValue(1024)
         self.canvas_height_spin.setSingleStep(100)
         self.canvas_height_spin.setSuffix(" 像素")
         canvas_layout.addWidget(self.canvas_height_spin, 2, 1)
