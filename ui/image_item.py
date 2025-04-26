@@ -144,13 +144,26 @@ class ImageItem(QGraphicsItem):
             delta = event.scenePos() - self.resize_start_pos
             rect = QRectF(self.resize_start_rect)
             if self.resize_handle == self.HANDLE_TOP_LEFT:
-                rect.setTopLeft(rect.topLeft() + delta)
+                new_left = rect.left() + delta.x()
+                new_top = rect.top() + delta.y()
+                rect.setLeft(new_left)
+                rect.setTop(new_top)
             elif self.resize_handle == self.HANDLE_TOP_RIGHT:
-                rect.setTopRight(rect.topRight() + delta)
+                new_right = rect.right() + delta.x()
+                new_top = rect.top() + delta.y()
+                rect.setRight(new_right)
+                rect.setTop(new_top)
             elif self.resize_handle == self.HANDLE_BOTTOM_LEFT:
-                rect.setBottomLeft(rect.bottomLeft() + delta)
+                new_left = rect.left() + delta.x()
+                new_bottom = rect.bottom() + delta.y()
+                rect.setLeft(new_left)
+                rect.setBottom(new_bottom)
             elif self.resize_handle == self.HANDLE_BOTTOM_RIGHT:
-                rect.setBottomRight(rect.bottomRight() + delta)
+                new_right = rect.right() + delta.x()
+                new_bottom = rect.bottom() + delta.y()
+                rect.setRight(new_right)
+                rect.setBottom(new_bottom)
+            rect = rect.normalized()
             # 限制最小尺寸
             min_size = 10
             rect.setWidth(max(rect.width(), min_size))
