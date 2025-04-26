@@ -11,6 +11,14 @@ class ImageItem(QGraphicsItem):
     用于管理单个贴图的状态和行为。
     """
     
+    HANDLE_SIZE = 8  # 手柄大小
+    HANDLE_MARGIN = 2  # 手柄边缘间距
+    HANDLE_NONE = -1
+    HANDLE_TOP_LEFT = 0
+    HANDLE_TOP_RIGHT = 1
+    HANDLE_BOTTOM_LEFT = 2
+    HANDLE_BOTTOM_RIGHT = 3
+    
     def __init__(self, filepath, name="", parent=None):
         super(ImageItem, self).__init__(parent)
         # 贴图基本属性
@@ -49,11 +57,17 @@ class ImageItem(QGraphicsItem):
         self.snap_to_grid = True
         self.grid_size = 50
         
+        self.resizing = False
+        self.resize_handle = self.HANDLE_NONE
+        self.resize_start_pos = QPointF()
+        self.resize_start_rect = QRectF()
+        
     def boundingRect(self):
         """
         返回贴图项的边界矩形
         """
-        return QRectF(0, 0, self.width * self.scale_x, self.height * self.scale_y)
+        margin = self.HANDLE_SIZE + self.HANDLE_MARGIN
+        return QRectF(0, 0, self.width * self.scale_x, self.height * self.scale_y).adjusted(-margin, -margin, margin, margin)
     
     def paint(self, painter, option, widget):
         """
@@ -68,27 +82,88 @@ class ImageItem(QGraphicsItem):
             source_rect = QRectF(0, 0, self.width, self.height)
             painter.drawPixmap(target_rect, self.pixmap, source_rect)
         
-        # 如果被选中，绘制边框
+        # 如果被选中，绘制边框和手柄
         if self.isSelected():
-            pen = QPen(QColor(0, 120, 215), 1, Qt.DashLine)
+            pen = QPen(QColor(0, 120, 215), 2, Qt.DashLine)
             painter.setPen(pen)
             painter.setBrush(QBrush(Qt.transparent))
-            painter.drawRect(self.boundingRect())
+            painter.drawRect(QRectF(0, 0, self.width * self.scale_x, self.height * self.scale_y))
+            # 绘制四角手柄
+            for rect in self.handleRects():
+                painter.setBrush(QBrush(QColor(0, 120, 215)))
+                painter.setPen(Qt.NoPen)
+                painter.drawRect(rect)
             
+    def handleRects(self):
+        # 返回四个手柄的QRectF列表
+        w = self.width * self.scale_x
+        h = self.height * self.scale_y
+        s = self.HANDLE_SIZE
+        m = self.HANDLE_MARGIN
+        return [
+            QRectF(-s/2 + m, -s/2 + m, s, s),  # 左上
+            QRectF(w - s/2 - m, -s/2 + m, s, s),  # 右上
+            QRectF(-s/2 + m, h - s/2 - m, s, s),  # 左下
+            QRectF(w - s/2 - m, h - s/2 - m, s, s),  # 右下
+        ]
+
+    def handleAt(self, pos):
+        # 判断pos是否在某个手柄内，返回手柄编号，否则-1
+        for i, rect in enumerate(self.handleRects()):
+            if rect.contains(pos):
+                return i
+        return self.HANDLE_NONE
+
     def mousePressEvent(self, event):
         """
         鼠标按下事件处理
         """
         if event.button() == Qt.LeftButton:
-            self.dragging = True
-            self.drag_start = event.pos()
+            handle = self.handleAt(event.pos())
+            if handle != self.HANDLE_NONE:
+                self.resizing = True
+                self.resize_handle = handle
+                self.resize_start_pos = event.scenePos()
+                self.resize_start_rect = QRectF(0, 0, self.width * self.scale_x, self.height * self.scale_y)
+                event.accept()
+                return
+            else:
+                self.dragging = True
+                self.drag_start = event.pos()
         super(ImageItem, self).mousePressEvent(event)
         
     def mouseMoveEvent(self, event):
         """
         鼠标移动事件处理
         """
-        if self.dragging:
+        if self.resizing:
+            # 计算缩放
+            delta = event.scenePos() - self.resize_start_pos
+            rect = QRectF(self.resize_start_rect)
+            if self.resize_handle == self.HANDLE_TOP_LEFT:
+                rect.setTopLeft(rect.topLeft() + delta)
+            elif self.resize_handle == self.HANDLE_TOP_RIGHT:
+                rect.setTopRight(rect.topRight() + delta)
+            elif self.resize_handle == self.HANDLE_BOTTOM_LEFT:
+                rect.setBottomLeft(rect.bottomLeft() + delta)
+            elif self.resize_handle == self.HANDLE_BOTTOM_RIGHT:
+                rect.setBottomRight(rect.bottomRight() + delta)
+            # 限制最小尺寸
+            min_size = 10
+            rect.setWidth(max(rect.width(), min_size))
+            rect.setHeight(max(rect.height(), min_size))
+            # 网格吸附
+            if self.snap_to_grid:
+                rect.setWidth(round(rect.width() / self.grid_size) * self.grid_size)
+                rect.setHeight(round(rect.height() / self.grid_size) * self.grid_size)
+            # 计算缩放因子
+            scale_x = rect.width() / self.width if self.width else 1.0
+            scale_y = rect.height() / self.height if self.height else 1.0
+            self.set_scale(scale_x, scale_y)
+            self.update()
+            event.accept()
+            return
+        elif self.dragging:
             # 让基类处理移动
             super(ImageItem, self).mouseMoveEvent(event)
             
@@ -100,12 +175,19 @@ class ImageItem(QGraphicsItem):
                 snapped_pos = self.snap_position(current_pos)
                 # 设置吸附后的位置
                 self.setPos(snapped_pos)
+        else:
+            super(ImageItem, self).mouseMoveEvent(event)
         
     def mouseReleaseEvent(self, event):
         """
         鼠标释放事件处理
         """
         if event.button() == Qt.LeftButton:
+            if self.resizing:
+                self.resizing = False
+                self.resize_handle = self.HANDLE_NONE
+                event.accept()
+                return
             self.dragging = False
             
             # 如果启用了网格吸附，确保最终位置吸附到网格
