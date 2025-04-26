@@ -138,9 +138,13 @@ class ImageItem(QGraphicsItem):
         """
         设置网格吸附
         """
+        old_grid_size = self.grid_size
         self.snap_to_grid = enabled
         if grid_size is not None:
             self.grid_size = grid_size
+        # 如果正在拖拽且网格间距发生变化，立即吸附到新网格
+        if self.dragging and self.snap_to_grid and (grid_size is not None and old_grid_size != grid_size):
+            self.setPos(self.snap_position(self.pos()))
             
     def snap_position(self, pos):
         """

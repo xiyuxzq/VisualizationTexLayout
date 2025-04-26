@@ -1,0 +1,12 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# core目录说明
+
+[core/](mdc:core) 目录包含项目的核心逻辑模块。
+
+- [layout_manager.py](mdc:core/layout_manager.py)：负责布局管理的主要逻辑。
+- [__init__.py](mdc:core/__init__.py)：使core成为Python包。
+

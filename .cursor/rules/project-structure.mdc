@@ -1,0 +1,18 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# 项目结构说明
+
+本项目包含以下主要目录和文件：
+
+- [main.py](mdc:main.py)：主程序入口。
+- [requirements.txt](mdc:requirements.txt)：Python依赖列表。
+- [README.md](mdc:README.md)：项目说明文档。
+- [core/](mdc:core)：核心逻辑模块，包含布局管理等功能。
+- [ui/](mdc:ui)：界面相关模块，包括主窗口、画布、工具面板等。
+- [Doc/](mdc:Doc)：项目文档与规划说明。
+
+各目录详细说明见对应规则。
+

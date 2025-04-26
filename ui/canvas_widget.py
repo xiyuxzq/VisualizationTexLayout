@@ -41,8 +41,10 @@ class CanvasWidget(QGraphicsView):
         # 网格设置
         self.show_grid = True
         self.grid_size = 5.0  # 默认网格间距为画布宽度的5%
-        self.grid_color = QColor(200, 200, 200, 120)  # 浅灰色，半透明
+        self.grid_color = QColor(100, 100, 100, 200)  # 浅灰色，半透明
+        self.grid_width = 2  # 新增：网格线宽度
         self.border_color = QColor(255, 0, 0, 200)  # 红色，稍微透明
+        self.border_width = 4  # 新增：边界线宽度
         
         # 网格吸附设置
         self.snap_to_grid = True
@@ -56,7 +58,7 @@ class CanvasWidget(QGraphicsView):
         scene_width = self.scene.width()
         # 计算百分比对应的像素值，并限制在1-200像素范围内
         pixel_size = (scene_width * self.grid_size) / 100.0
-        return max(1, min(200, pixel_size))
+        return pixel_size
         
     def drawBackground(self, painter, rect):
         """
@@ -74,7 +76,7 @@ class CanvasWidget(QGraphicsView):
         if self.show_grid:
             # 设置网格线的画笔
             grid_pen = QPen(self.grid_color)
-            grid_pen.setWidth(1)
+            grid_pen.setWidth(self.grid_width)  # 使用可设置的宽度
             painter.setPen(grid_pen)
             
             # 对特殊百分比值特殊处理
@@ -121,7 +123,7 @@ class CanvasWidget(QGraphicsView):
         
         # 绘制场景边界红色框
         border_pen = QPen(self.border_color)
-        border_pen.setWidth(2)
+        border_pen.setWidth(self.border_width)  # 使用可设置的宽度
         painter.setPen(border_pen)
         painter.drawRect(scene_rect)
         
@@ -277,3 +279,31 @@ class CanvasWidget(QGraphicsView):
         y = round(pos.y() / actual_grid_size) * actual_grid_size
         
         return QPointF(x, y)
+
+    def set_grid_color(self, color):
+        """
+        设置网格颜色
+        """
+        self.grid_color = color
+        self.viewport().update()
+
+    def set_grid_width(self, width):
+        """
+        设置网格线宽度
+        """
+        self.grid_width = width
+        self.viewport().update()
+
+    def set_border_color(self, color):
+        """
+        设置边界颜色
+        """
+        self.border_color = color
+        self.viewport().update()
+
+    def set_border_width(self, width):
+        """
+        设置边界线宽度
+        """
+        self.border_width = width
+        self.viewport().update()

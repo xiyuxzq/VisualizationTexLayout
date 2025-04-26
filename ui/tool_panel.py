@@ -4,9 +4,9 @@
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QTabWidget, QPushButton, 
                             QFileDialog, QLabel, QGridLayout, QSpinBox, 
                             QDoubleSpinBox, QCheckBox, QListWidget, QHBoxLayout,
-                            QGroupBox, QFrame, QSizePolicy, QComboBox)
+                            QGroupBox, QFrame, QSizePolicy, QComboBox, QColorDialog)
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QColor
 
 from ui.image_item import ImageItem
 
@@ -21,6 +21,10 @@ class ToolPanel(QWidget):
     grid_size_changed = pyqtSignal(float)  # 网格大小变更信号
     canvas_size_changed = pyqtSignal(int, int)  # 画布大小变更信号，参数为宽度和高度
     snap_to_grid_changed = pyqtSignal(bool)  # 网格吸附变更信号
+    grid_color_changed = pyqtSignal(QColor)  # 网格颜色变更信号
+    grid_width_changed = pyqtSignal(int)     # 网格线宽度变更信号
+    border_color_changed = pyqtSignal(QColor) # 边界颜色变更信号
+    border_width_changed = pyqtSignal(int)    # 边界线宽度变更信号
     
     def __init__(self, parent=None):
         super(ToolPanel, self).__init__(parent)
@@ -243,13 +247,36 @@ class ToolPanel(QWidget):
         self.snap_to_grid_check.stateChanged.connect(self.on_snap_to_grid_changed)
         grid_layout.addWidget(self.snap_to_grid_check, 2, 1)
         
-        # 网格示例
-        grid_layout.addWidget(QLabel("网格示例:"), 3, 0, 1, 2)
-        self.grid_example = QFrame()
-        self.grid_example.setMinimumHeight(100)
-        self.grid_example.setFrameShape(QFrame.StyledPanel)
-        self.grid_example.setStyleSheet("background-color: #f0f0f0;")
-        grid_layout.addWidget(self.grid_example, 4, 0, 1, 2)
+        
+        # 网格颜色
+        grid_layout.addWidget(QLabel("网格颜色:"), 5, 0)
+        self.grid_color_btn = QPushButton()
+        self.grid_color_btn.setStyleSheet("background-color: #646464;")
+        self.grid_color_btn.clicked.connect(self.on_grid_color_clicked)
+        grid_layout.addWidget(self.grid_color_btn, 5, 1)
+        
+        # 网格线宽
+        grid_layout.addWidget(QLabel("网格线宽:"), 6, 0)
+        self.grid_width_spin = QSpinBox()
+        self.grid_width_spin.setRange(1, 20)
+        self.grid_width_spin.setValue(2)
+        self.grid_width_spin.valueChanged.connect(self.on_grid_width_changed)
+        grid_layout.addWidget(self.grid_width_spin, 6, 1)
+        
+        # 边界颜色
+        grid_layout.addWidget(QLabel("边界颜色:"), 7, 0)
+        self.border_color_btn = QPushButton()
+        self.border_color_btn.setStyleSheet("background-color: #ff0000;")
+        self.border_color_btn.clicked.connect(self.on_border_color_clicked)
+        grid_layout.addWidget(self.border_color_btn, 7, 1)
+        
+        # 边界线宽
+        grid_layout.addWidget(QLabel("边界线宽:"), 8, 0)
+        self.border_width_spin = QSpinBox()
+        self.border_width_spin.setRange(1, 20)
+        self.border_width_spin.setValue(4)
+        self.border_width_spin.valueChanged.connect(self.on_border_width_changed)
+        grid_layout.addWidget(self.border_width_spin, 8, 1)
         
         grid_group.setLayout(grid_layout)
         layout.addWidget(grid_group)
@@ -350,6 +377,24 @@ class ToolPanel(QWidget):
         """
         enabled = state == Qt.Checked
         self.snap_to_grid_changed.emit(enabled)
+    
+    def on_grid_color_clicked(self):
+        color = QColorDialog.getColor(QColor(100, 100, 100), self, "选择网格颜色")
+        if color.isValid():
+            self.grid_color_btn.setStyleSheet(f"background-color: {color.name()};")
+            self.grid_color_changed.emit(color)
+    
+    def on_grid_width_changed(self, value):
+        self.grid_width_changed.emit(value)
+    
+    def on_border_color_clicked(self):
+        color = QColorDialog.getColor(QColor(255, 0, 0), self, "选择边界颜色")
+        if color.isValid():
+            self.border_color_btn.setStyleSheet(f"background-color: {color.name()};")
+            self.border_color_changed.emit(color)
+    
+    def on_border_width_changed(self, value):
+        self.border_width_changed.emit(value)
     
     def update_property_values(self, image_item):
         """

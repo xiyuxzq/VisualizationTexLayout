@@ -228,6 +228,10 @@ class MainWindow(QMainWindow):
         self.tool_panel.grid_visible_changed.connect(self.canvas.set_grid_visible)
         self.tool_panel.grid_size_changed.connect(self.canvas.set_grid_size)
         self.tool_panel.snap_to_grid_changed.connect(self.canvas.set_snap_to_grid)
+        self.tool_panel.grid_color_changed.connect(self.canvas.set_grid_color)
+        self.tool_panel.grid_width_changed.connect(self.canvas.set_grid_width)
+        self.tool_panel.border_color_changed.connect(self.canvas.set_border_color)
+        self.tool_panel.border_width_changed.connect(self.canvas.set_border_width)
         
         # 连接画布大小设置信号
         self.tool_panel.canvas_size_changed.connect(self.canvas.set_canvas_size)
