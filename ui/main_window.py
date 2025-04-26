@@ -301,8 +301,8 @@ class MainWindow(QMainWindow):
                 
                 # 设置画布大小
                 if "canvas" in layout_data:
-                    width = layout_data["canvas"].get("width", 1024)
-                    height = layout_data["canvas"].get("height", 1024)
+                    width = int(layout_data["canvas"].get("width", 1024))
+                    height = int(layout_data["canvas"].get("height", 1024))
                     self.canvas.set_canvas_size(width, height)
                     self.tool_panel.set_canvas_size(width, height)
                 
@@ -347,7 +347,9 @@ class MainWindow(QMainWindow):
                 self.status_bar.showMessage(f"已打开文件: {file_path}")
                 
             except Exception as e:
-                QMessageBox.critical(self, "错误", f"打开文件失败: {str(e)}")
+                import traceback
+                tb = traceback.format_exc()
+                QMessageBox.critical(self, "错误", f"打开文件失败: {str(e)}\n\n{tb}")
     
     def save_file(self):
         """
