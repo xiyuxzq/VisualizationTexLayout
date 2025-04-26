@@ -11,7 +11,7 @@ class ImageItem(QGraphicsItem):
     用于管理单个贴图的状态和行为。
     """
     
-    HANDLE_SIZE = 8  # 手柄大小
+    HANDLE_SIZE = 12  # 手柄大小
     HANDLE_MARGIN = 2  # 手柄边缘间距
     HANDLE_NONE = -1
     HANDLE_TOP_LEFT = 0
@@ -62,11 +62,14 @@ class ImageItem(QGraphicsItem):
         self.resize_start_pos = QPointF()
         self.resize_start_rect = QRectF()
         
+        self.handle_color = QColor(0, 120, 215)  # 新增：手柄颜色
+        self.handle_size = 12                   # 新增：手柄大小
+        
     def boundingRect(self):
         """
         返回贴图项的边界矩形
         """
-        margin = self.HANDLE_SIZE + self.HANDLE_MARGIN
+        margin = self.handle_size + self.HANDLE_MARGIN
         return QRectF(0, 0, self.width * self.scale_x, self.height * self.scale_y).adjusted(-margin, -margin, margin, margin)
     
     def paint(self, painter, option, widget):
@@ -84,13 +87,13 @@ class ImageItem(QGraphicsItem):
         
         # 如果被选中，绘制边框和手柄
         if self.isSelected():
-            pen = QPen(QColor(0, 120, 215), 2, Qt.DashLine)
+            pen = QPen(self.handle_color, 2, Qt.DashLine)
             painter.setPen(pen)
             painter.setBrush(QBrush(Qt.transparent))
             painter.drawRect(QRectF(0, 0, self.width * self.scale_x, self.height * self.scale_y))
             # 绘制四角手柄
             for rect in self.handleRects():
-                painter.setBrush(QBrush(QColor(0, 120, 215)))
+                painter.setBrush(QBrush(self.handle_color))
                 painter.setPen(Qt.NoPen)
                 painter.drawRect(rect)
             
@@ -98,7 +101,7 @@ class ImageItem(QGraphicsItem):
         # 返回四个手柄的QRectF列表
         w = self.width * self.scale_x
         h = self.height * self.scale_y
-        s = self.HANDLE_SIZE
+        s = self.handle_size
         m = self.HANDLE_MARGIN
         return [
             QRectF(-s/2 + m, -s/2 + m, s, s),  # 左上
@@ -265,3 +268,11 @@ class ImageItem(QGraphicsItem):
             "zIndex": self.zValue(),
             "visible": self.visible
         }
+
+    def set_handle_color(self, color):
+        self.handle_color = color
+        self.update()
+
+    def set_handle_size(self, size):
+        self.handle_size = size
+        self.update()

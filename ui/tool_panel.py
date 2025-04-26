@@ -25,6 +25,8 @@ class ToolPanel(QWidget):
     grid_width_changed = pyqtSignal(int)     # 网格线宽度变更信号
     border_color_changed = pyqtSignal(QColor) # 边界颜色变更信号
     border_width_changed = pyqtSignal(int)    # 边界线宽度变更信号
+    handle_color_changed = pyqtSignal(QColor)  # 新增：缩放手柄颜色变更信号
+    handle_size_changed = pyqtSignal(int)      # 新增：缩放手柄大小变更信号
     
     def __init__(self, parent=None):
         super(ToolPanel, self).__init__(parent)
@@ -211,6 +213,27 @@ class ToolPanel(QWidget):
         self.border_width_spin.setValue(4)
         self.border_width_spin.valueChanged.connect(self.on_border_width_changed)
         grid_layout.addWidget(self.border_width_spin, 8, 1)
+
+        grid_group.setLayout(grid_layout)
+        layout.addWidget(grid_group)
+        
+        grid_group = QGroupBox("图片缩放手柄设置")
+        grid_layout = QGridLayout()
+
+        # 新增：缩放手柄颜色
+        grid_layout.addWidget(QLabel("缩放手柄颜色:"), 9, 0)
+        self.handle_color_btn = QPushButton()
+        self.handle_color_btn.setStyleSheet("background-color: #0078d7;")
+        self.handle_color_btn.clicked.connect(self.on_handle_color_clicked)
+        grid_layout.addWidget(self.handle_color_btn, 9, 1)
+
+        # 新增：缩放手柄大小
+        grid_layout.addWidget(QLabel("缩放手柄大小:"), 10, 0)
+        self.handle_size_spin = QSpinBox()
+        self.handle_size_spin.setRange(8, 32)
+        self.handle_size_spin.setValue(12)
+        self.handle_size_spin.valueChanged.connect(self.on_handle_size_changed)
+        grid_layout.addWidget(self.handle_size_spin, 10, 1)
         
         grid_group.setLayout(grid_layout)
         layout.addWidget(grid_group)
@@ -329,6 +352,15 @@ class ToolPanel(QWidget):
     
     def on_border_width_changed(self, value):
         self.border_width_changed.emit(value)
+    
+    def on_handle_color_clicked(self):
+        color = QColorDialog.getColor(QColor(0, 120, 215), self, "选择缩放手柄颜色")
+        if color.isValid():
+            self.handle_color_btn.setStyleSheet(f"background-color: {color.name()};")
+            self.handle_color_changed.emit(color)
+
+    def on_handle_size_changed(self, value):
+        self.handle_size_changed.emit(value)
     
     def update_property_values(self, image_item):
         """

@@ -196,6 +196,10 @@ class MainWindow(QMainWindow):
         self.tool_panel.reset_view_btn.clicked.connect(self.canvas.reset_view)
         self.tool_panel.fit_view_btn.clicked.connect(self.canvas.fit_in_view)
         
+        # 新增：缩放手柄颜色和大小
+        self.tool_panel.handle_color_changed.connect(self.set_handle_color_for_all)
+        self.tool_panel.handle_size_changed.connect(self.set_handle_size_for_all)
+        
     def init_settings(self):
         """
         初始化应用设置
@@ -425,3 +429,13 @@ class MainWindow(QMainWindow):
             "一个用于可视化调整贴图布局并生成合并数据的工具。\n\n"
             "© 2023 VisualizationTexLayout"
         )
+
+    def set_handle_color_for_all(self, color):
+        for item in self.canvas.scene.items():
+            if isinstance(item, ImageItem):
+                item.set_handle_color(color)
+
+    def set_handle_size_for_all(self, size):
+        for item in self.canvas.scene.items():
+            if isinstance(item, ImageItem):
+                item.set_handle_size(size)
