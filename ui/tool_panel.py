@@ -385,7 +385,7 @@ class ToolPanel(QWidget):
             self,
             "选择图片",
             "",
-            "图片文件 (*.png *.jpg *.jpeg *.bmp *.gif)"
+            "图片文件 (*.png *.jpg *.jpeg *.bmp *.gif *.tga)"
         )
         
         if filepath:
@@ -669,13 +669,15 @@ class MaterialNameDialog(QDialog):
         
         layout = QVBoxLayout(self)
         
-        # 文件路径显示
-        path_layout = QHBoxLayout()
-        path_layout.addWidget(QLabel("文件路径:"))
-        path_label = QLabel(self.filepath)
-        path_label.setWordWrap(True)
-        path_layout.addWidget(path_label)
-        layout.addLayout(path_layout)
+        # 文件名显示（不显示完整路径）
+        if self.filepath:
+            filename = os.path.basename(self.filepath)
+            file_layout = QHBoxLayout()
+            file_layout.addWidget(QLabel("文件名:"))
+            file_label = QLabel(filename)
+            file_label.setWordWrap(True)
+            file_layout.addWidget(file_label)
+            layout.addLayout(file_layout)
         
         # 材质球名称输入
         form_layout = QFormLayout()
