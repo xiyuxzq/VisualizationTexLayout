@@ -284,7 +284,7 @@ class ToolPanel(QWidget):
         """
         file_dialog = QFileDialog()
         file_path, _ = file_dialog.getOpenFileName(
-            self, "选择贴图", "", "图片文件 (*.png *.jpg *.jpeg *.bmp *.gif)"
+            self, "选择贴图", "", "图片文件 (*.png *.jpg *.jpeg *.bmp *.gif *.tga)"
         )
         
         if file_path:
