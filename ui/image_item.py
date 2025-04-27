@@ -261,13 +261,26 @@ class ImageItem(QGraphicsItem):
         """
         将贴图项转换为字典，用于序列化
         """
+        # 获取场景大小
+        scene = self.scene()
+        if scene:
+            scene_width = scene.width()
+            scene_height = scene.height()
+            # 计算位置百分比
+            pos_x_percent = self.pos().x() / scene_width
+            pos_y_percent = self.pos().y() / scene_height
+        else:
+            # 如果无法获取场景大小，使用默认值
+            pos_x_percent = 0
+            pos_y_percent = 0
+            
         return {
             "id": str(self.id),
             "name": self.name,
             "filepath": self.filepath,
             "position": {
-                "x": self.pos().x(),
-                "y": self.pos().y()
+                "x": pos_x_percent,
+                "y": pos_y_percent
             },
             "size": {
                 "width": self.width,

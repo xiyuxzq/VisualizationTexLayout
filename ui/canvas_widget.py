@@ -27,16 +27,18 @@ class CanvasWidget(QGraphicsView):
         self.setBackgroundBrush(QColor(240, 240, 240))
         
         # 设置拖拽模式
-        self.setDragMode(QGraphicsView.RubberBandDrag)
+        self.setDragMode(QGraphicsView.NoDrag)  # 默认不启用拖拽
         
         # 启用鼠标跟踪
         self.setMouseTracking(True)
         
+        # 设置视图属性
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
+        
         # 初始化缩放比例
         self.scale_factor = 1.0
-        
-        # 适应视图大小
-        self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
         
         # 网格设置
         self.show_grid = True
@@ -48,6 +50,10 @@ class CanvasWidget(QGraphicsView):
         
         # 网格吸附设置
         self.snap_to_grid = True
+        
+        # 添加鼠标中键拖拽相关变量
+        self._panning = False
+        self._last_mouse_pos = None
         
     def get_actual_grid_size(self):
         """
@@ -307,3 +313,41 @@ class CanvasWidget(QGraphicsView):
         """
         self.border_width = width
         self.viewport().update()
+
+    def mousePressEvent(self, event):
+        """
+        处理鼠标按下事件
+        """
+        if event.button() == Qt.MiddleButton:
+            self._panning = True
+            self._last_mouse_pos = event.pos()
+            self.setCursor(Qt.ClosedHandCursor)
+            event.accept()  # 接受事件，防止事件继续传播
+            return
+        super(CanvasWidget, self).mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        """
+        处理鼠标释放事件
+        """
+        if event.button() == Qt.MiddleButton:
+            self._panning = False
+            self.setCursor(Qt.ArrowCursor)
+            event.accept()  # 接受事件，防止事件继续传播
+            return
+        super(CanvasWidget, self).mouseReleaseEvent(event)
+
+    def mouseMoveEvent(self, event):
+        """
+        处理鼠标移动事件
+        """
+        if self._panning and self._last_mouse_pos is not None:
+            # 计算鼠标移动的距离
+            delta = event.pos() - self._last_mouse_pos
+            # 移动视图
+            self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() - delta.x())
+            self.verticalScrollBar().setValue(self.verticalScrollBar().value() - delta.y())
+            self._last_mouse_pos = event.pos()
+            event.accept()  # 接受事件，防止事件继续传播
+            return
+        super(CanvasWidget, self).mouseMoveEvent(event)

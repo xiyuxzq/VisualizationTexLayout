@@ -321,8 +321,11 @@ class MainWindow(QMainWindow):
                             if image_item:
                                 # 设置位置
                                 pos = img_data.get("position", {})
-                                x = pos.get("x", 0)
-                                y = pos.get("y", 0)
+                                x_percent = pos.get("x", 0)
+                                y_percent = pos.get("y", 0)
+                                # 将百分比转换为像素
+                                x = (x_percent / 100.0) * self.canvas.scene.width()
+                                y = (y_percent / 100.0) * self.canvas.scene.height()
                                 image_item.setPos(x, y)
                                 
                                 # 设置缩放
