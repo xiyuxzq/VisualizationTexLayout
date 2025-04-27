@@ -113,7 +113,10 @@ class MainWindow(QMainWindow):
         # 编辑菜单
         edit_menu = self.menuBar().addMenu("编辑")
         
-        # 后续实现编辑菜单
+        delete_action = QAction("删除", self)
+        delete_action.setShortcut("Delete")
+        delete_action.triggered.connect(self.delete_selected_images)
+        edit_menu.addAction(delete_action)
         
         # 视图菜单
         view_menu = self.menuBar().addMenu("视图")
@@ -159,7 +162,10 @@ class MainWindow(QMainWindow):
         add_image_action.triggered.connect(self.tool_panel.on_add_image_clicked)
         image_menu.addAction(add_image_action)
         
-        # 后续实现贴图菜单
+        delete_image_action = QAction("删除选中贴图", self)
+        delete_image_action.setShortcut("Delete")
+        delete_image_action.triggered.connect(self.delete_selected_images)
+        image_menu.addAction(delete_image_action)
         
         # 帮助菜单
         help_menu = self.menuBar().addMenu("帮助")
@@ -193,7 +199,7 @@ class MainWindow(QMainWindow):
         self.tool_panel.save_btn.clicked.connect(self.save_file)
         self.tool_panel.zoom_in_btn.clicked.connect(lambda: self.canvas.scale(1.2, 1.2))
         self.tool_panel.zoom_out_btn.clicked.connect(lambda: self.canvas.scale(1/1.2, 1/1.2))
-        self.tool_panel.reset_view_btn.clicked.connect(self.canvas.reset_view)
+        self.tool_panel.delete_btn.clicked.connect(self.delete_selected_images)
         self.tool_panel.fit_view_btn.clicked.connect(self.canvas.fit_in_view)
         
         # 新增：缩放手柄颜色和大小
@@ -444,3 +450,21 @@ class MainWindow(QMainWindow):
         for item in self.canvas.scene.items():
             if isinstance(item, ImageItem):
                 item.set_handle_size(size)
+
+    def delete_selected_images(self):
+        """
+        删除选中的贴图
+        """
+        # 获取所有选中的贴图项
+        selected_items = [item for item in self.canvas.scene.selectedItems() 
+                         if isinstance(item, ImageItem)]
+        
+        if not selected_items:
+            self.status_bar.showMessage("没有选中任何贴图")
+            return
+            
+        # 删除选中的贴图
+        for item in selected_items:
+            self.canvas.scene.removeItem(item)
+            
+        self.status_bar.showMessage(f"已删除 {len(selected_items)} 个贴图")

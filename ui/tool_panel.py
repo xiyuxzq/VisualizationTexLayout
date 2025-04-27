@@ -69,8 +69,8 @@ class ToolPanel(QWidget):
         self.save_btn = QPushButton("保存")
         self.zoom_in_btn = QPushButton("放大")
         self.zoom_out_btn = QPushButton("缩小")
-        self.reset_view_btn = QPushButton("重置视图")
         self.fit_view_btn = QPushButton("适应视图")
+        self.delete_btn = QPushButton("删除选中贴图")
         self.add_image_btn = QPushButton("添加贴图")
         # 两行布局
         op_layout.addWidget(self.new_btn, 0, 0)
@@ -79,8 +79,9 @@ class ToolPanel(QWidget):
         op_layout.addWidget(self.add_image_btn, 0, 3)
         op_layout.addWidget(self.zoom_in_btn, 1, 0)
         op_layout.addWidget(self.zoom_out_btn, 1, 1)
-        op_layout.addWidget(self.reset_view_btn, 1, 2)
-        op_layout.addWidget(self.fit_view_btn, 1, 3)
+        op_layout.addWidget(self.fit_view_btn, 1, 2)
+        op_layout.addWidget(self.delete_btn, 1, 3)
+        
         op_group.setLayout(op_layout)
         layout.addWidget(op_group)
 
