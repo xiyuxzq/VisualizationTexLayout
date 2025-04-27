@@ -121,12 +121,12 @@ class MainWindow(QMainWindow):
         # 视图菜单
         view_menu = self.menuBar().addMenu("视图")
         
-        zoom_in_action = QAction("放大", self)
+        zoom_in_action = QAction("放大选中图片", self)
         zoom_in_action.setShortcut("Ctrl++")
         zoom_in_action.triggered.connect(lambda: self.canvas.scale(1.2, 1.2))
         view_menu.addAction(zoom_in_action)
         
-        zoom_out_action = QAction("缩小", self)
+        zoom_out_action = QAction("缩小选中图片", self)
         zoom_out_action.setShortcut("Ctrl+-")
         zoom_out_action.triggered.connect(lambda: self.canvas.scale(1/1.2, 1/1.2))
         view_menu.addAction(zoom_out_action)
@@ -197,15 +197,59 @@ class MainWindow(QMainWindow):
         self.tool_panel.new_btn.clicked.connect(self.new_file)
         self.tool_panel.open_btn.clicked.connect(self.open_file)
         self.tool_panel.save_btn.clicked.connect(self.save_file)
-        self.tool_panel.zoom_in_btn.clicked.connect(lambda: self.canvas.scale(1.2, 1.2))
-        self.tool_panel.zoom_out_btn.clicked.connect(lambda: self.canvas.scale(1/1.2, 1/1.2))
+        self.tool_panel.zoom_in_btn.clicked.connect(self.zoom_selected_image_in)
+        self.tool_panel.zoom_out_btn.clicked.connect(self.zoom_selected_image_out)
         self.tool_panel.delete_btn.clicked.connect(self.delete_selected_images)
         self.tool_panel.fit_view_btn.clicked.connect(self.canvas.fit_in_view)
         
         # 新增：缩放手柄颜色和大小
         self.tool_panel.handle_color_changed.connect(self.set_handle_color_for_all)
         self.tool_panel.handle_size_changed.connect(self.set_handle_size_for_all)
+
+    def zoom_selected_image_in(self):
+        """
+        放大选中的图片
+        """
+        # 获取所有选中的贴图项
+        selected_items = [item for item in self.canvas.scene.selectedItems() 
+                         if isinstance(item, ImageItem)]
         
+        if not selected_items:
+            self.status_bar.showMessage("请先选择要缩放的贴图")
+            return
+            
+        # 对每个选中的贴图进行缩放
+        for item in selected_items:
+            # 获取当前缩放因子
+            current_scale_x = item.scale_x
+            current_scale_y = item.scale_y
+            # 应用新的缩放因子
+            item.set_scale(current_scale_x * 1.2, current_scale_y * 1.2)
+            
+        self.status_bar.showMessage(f"已放大 {len(selected_items)} 个贴图")
+
+    def zoom_selected_image_out(self):
+        """
+        缩小选中的图片
+        """
+        # 获取所有选中的贴图项
+        selected_items = [item for item in self.canvas.scene.selectedItems() 
+                         if isinstance(item, ImageItem)]
+        
+        if not selected_items:
+            self.status_bar.showMessage("请先选择要缩放的贴图")
+            return
+            
+        # 对每个选中的贴图进行缩放
+        for item in selected_items:
+            # 获取当前缩放因子
+            current_scale_x = item.scale_x
+            current_scale_y = item.scale_y
+            # 应用新的缩放因子
+            item.set_scale(current_scale_x / 1.2, current_scale_y / 1.2)
+            
+        self.status_bar.showMessage(f"已缩小 {len(selected_items)} 个贴图")
+
     def init_settings(self):
         """
         初始化应用设置
