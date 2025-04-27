@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QTabWidget, QPushButton,
                             QFileDialog, QLabel, QGridLayout, QSpinBox, 
                             QDoubleSpinBox, QCheckBox, QListWidget, QHBoxLayout,
                             QGroupBox, QFrame, QSizePolicy, QComboBox, QColorDialog,
-                            QLineEdit, QMessageBox, QApplication)
+                            QLineEdit, QMessageBox, QApplication, QDialog, QFormLayout)
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QPixmap, QColor
 import os
@@ -18,7 +18,7 @@ class ToolPanel(QWidget):
     """
     
     # 自定义信号
-    add_image_signal = pyqtSignal(str)  # 添加贴图信号，参数为文件路径
+    add_image_signal = pyqtSignal(str, str)  # 添加贴图信号，参数为文件路径和材质球名称
     grid_visible_changed = pyqtSignal(bool)  # 网格可见性变更信号
     grid_size_changed = pyqtSignal(float)  # 网格大小变更信号
     canvas_size_changed = pyqtSignal(int, int)  # 画布大小变更信号，参数为宽度和高度
@@ -387,21 +387,26 @@ class ToolPanel(QWidget):
         )
         
         if file_path:
-            # 更新预览
-            pixmap = QPixmap(file_path)
-            if not pixmap.isNull():
-                # 设置预览图片，保持比例
-                self.preview_label.setPixmap(
-                    pixmap.scaled(
-                        self.preview_label.width(), 
-                        self.preview_label.height(),
-                        Qt.KeepAspectRatio,
-                        Qt.SmoothTransformation
+            # 弹出材质球名称输入对话框
+            dialog = MaterialNameDialog(self, file_path)
+            if dialog.exec_() == QDialog.Accepted:
+                material_name = dialog.get_material_name()
+                
+                # 更新预览
+                pixmap = QPixmap(file_path)
+                if not pixmap.isNull():
+                    # 设置预览图片，保持比例
+                    self.preview_label.setPixmap(
+                        pixmap.scaled(
+                            self.preview_label.width(), 
+                            self.preview_label.height(),
+                            Qt.KeepAspectRatio,
+                            Qt.SmoothTransformation
+                        )
                     )
-                )
-            
-            # 发送添加贴图信号
-            self.add_image_signal.emit(file_path)
+                
+                # 发送添加贴图信号，包含材质球名称
+                self.add_image_signal.emit(file_path, material_name)
     
     def on_grid_visible_changed(self, state):
         """
@@ -653,3 +658,71 @@ class ToolPanel(QWidget):
                 
                 # 显示提示信息
                 main_window.statusBar().showMessage(f"已复制文件路径: {filepath}", 3000)
+
+class MaterialNameDialog(QDialog):
+    """
+    材质球名称输入对话框
+    """
+    def __init__(self, parent=None, filepath=""):
+        super(MaterialNameDialog, self).__init__(parent)
+        self.filepath = filepath
+        self.material_name = ""
+        self.init_ui()
+        
+    def init_ui(self):
+        """
+        初始化界面
+        """
+        self.setWindowTitle("输入材质球名称")
+        self.setMinimumWidth(400)
+        
+        layout = QVBoxLayout(self)
+        
+        # 文件路径显示
+        path_layout = QHBoxLayout()
+        path_layout.addWidget(QLabel("文件路径:"))
+        path_label = QLabel(self.filepath)
+        path_label.setWordWrap(True)
+        path_layout.addWidget(path_label)
+        layout.addLayout(path_layout)
+        
+        # 材质球名称输入
+        form_layout = QFormLayout()
+        self.material_edit = QLineEdit()
+        self.material_edit.setPlaceholderText("请输入材质球名称")
+        # 尝试从文件名生成默认材质球名称
+        if self.filepath:
+            filename = os.path.basename(self.filepath)
+            name_without_ext = os.path.splitext(filename)[0]
+            self.material_edit.setText(name_without_ext)
+        form_layout.addRow("材质球名称:", self.material_edit)
+        layout.addLayout(form_layout)
+        
+        # 按钮
+        button_layout = QHBoxLayout()
+        self.ok_button = QPushButton("确定")
+        self.ok_button.clicked.connect(self.accept)
+        self.cancel_button = QPushButton("取消")
+        self.cancel_button.clicked.connect(self.reject)
+        button_layout.addWidget(self.ok_button)
+        button_layout.addWidget(self.cancel_button)
+        layout.addLayout(button_layout)
+        
+        # 设置默认按钮
+        self.ok_button.setDefault(True)
+        
+    def get_material_name(self):
+        """
+        获取输入的材质球名称
+        """
+        return self.material_edit.text().strip()
+        
+    def accept(self):
+        """
+        确认按钮点击事件处理
+        """
+        self.material_name = self.get_material_name()
+        if not self.material_name:
+            QMessageBox.warning(self, "警告", "请输入材质球名称")
+            return
+        super(MaterialNameDialog, self).accept()

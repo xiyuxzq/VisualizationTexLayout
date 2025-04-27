@@ -298,9 +298,22 @@ class ImageItem(QGraphicsItem):
         }
 
     def set_handle_color(self, color):
+        """
+        设置缩放手柄颜色
+        """
         self.handle_color = color
         self.update()
 
     def set_handle_size(self, size):
+        """
+        设置缩放手柄大小
+        """
         self.handle_size = size
+        self.update()
+
+    def set_border_width(self, width):
+        """
+        设置边界线宽度
+        """
+        self.border_width = width
         self.update()

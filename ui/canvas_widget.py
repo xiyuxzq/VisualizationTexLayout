@@ -309,10 +309,27 @@ class CanvasWidget(QGraphicsView):
 
     def set_border_width(self, width):
         """
-        设置边界线宽度
+        设置所有贴图项的边界线宽度
         """
-        self.border_width = width
-        self.viewport().update()
+        for item in self.scene.items():
+            if isinstance(item, ImageItem):
+                item.set_border_width(width)
+                
+    def set_handle_color(self, color):
+        """
+        设置所有贴图项的缩放手柄颜色
+        """
+        for item in self.scene.items():
+            if isinstance(item, ImageItem):
+                item.set_handle_color(color)
+                
+    def set_handle_size(self, size):
+        """
+        设置所有贴图项的缩放手柄大小
+        """
+        for item in self.scene.items():
+            if isinstance(item, ImageItem):
+                item.set_handle_size(size)
 
     def mousePressEvent(self, event):
         """

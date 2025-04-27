@@ -193,14 +193,14 @@ class MainWindow(QMainWindow):
         self.tool_panel.add_image_signal.connect(self.add_image)
         self.tool_panel.grid_visible_changed.connect(self.canvas.set_grid_visible)
         self.tool_panel.grid_size_changed.connect(self.canvas.set_grid_size)
-        self.tool_panel.canvas_size_changed.connect(self.canvas.set_canvas_size)
+        self.tool_panel.canvas_size_changed.connect(self.set_canvas_size)
         self.tool_panel.snap_to_grid_changed.connect(self.canvas.set_snap_to_grid)
         self.tool_panel.grid_color_changed.connect(self.canvas.set_grid_color)
         self.tool_panel.grid_width_changed.connect(self.canvas.set_grid_width)
         self.tool_panel.border_color_changed.connect(self.canvas.set_border_color)
         self.tool_panel.border_width_changed.connect(self.canvas.set_border_width)
-        self.tool_panel.handle_color_changed.connect(self.set_handle_color_for_all)
-        self.tool_panel.handle_size_changed.connect(self.set_handle_size_for_all)
+        self.tool_panel.handle_color_changed.connect(self.canvas.set_handle_color)
+        self.tool_panel.handle_size_changed.connect(self.canvas.set_handle_size)
         self.tool_panel.export_signal.connect(self.export_layout_with_preset)
         
         # 画布信号
@@ -439,20 +439,26 @@ class MainWindow(QMainWindow):
         
         event.accept()
     
-    def add_image(self, filepath):
+    def add_image(self, filepath, material_name=""):
         """
         添加贴图到画布
+        
+        Args:
+            filepath: 贴图文件路径
+            material_name: 材质球名称
         """
-        if os.path.exists(filepath):
-            image_item = ImageItem(filepath)
-            # 设置网格吸附属性
-            image_item.set_snap_to_grid(self.canvas.snap_to_grid, self.canvas.grid_size)
-            self.canvas.add_image(image_item)
-            self.status_bar.showMessage(f"已添加贴图: {filepath}")
-            return image_item
-        else:
-            self.status_bar.showMessage(f"文件不存在: {filepath}")
-            return None
+        # 创建贴图项
+        image_item = ImageItem(filepath)
+        
+        # 设置材质球名称
+        if material_name:
+            image_item.material_name = material_name
+        
+        # 添加到画布
+        self.canvas.add_image(image_item)
+        
+        # 更新状态栏
+        self.statusBar().showMessage(f"已添加贴图: {os.path.basename(filepath)}", 3000)
     
     def new_file(self):
         """
@@ -620,15 +626,9 @@ class MainWindow(QMainWindow):
             "© 2023 VisualizationTexLayout"
         )
 
-    def set_handle_color_for_all(self, color):
-        for item in self.canvas.scene.items():
-            if isinstance(item, ImageItem):
-                item.set_handle_color(color)
-
-    def set_handle_size_for_all(self, size):
-        for item in self.canvas.scene.items():
-            if isinstance(item, ImageItem):
-                item.set_handle_size(size)
+    def set_canvas_size(self, width, height):
+        self.canvas.set_canvas_size(width, height)
+        self.tool_panel.set_canvas_size(width, height)
 
     def delete_selected_images(self):
         """
