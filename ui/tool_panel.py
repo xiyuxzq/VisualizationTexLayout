@@ -4,9 +4,11 @@
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QTabWidget, QPushButton, 
                             QFileDialog, QLabel, QGridLayout, QSpinBox, 
                             QDoubleSpinBox, QCheckBox, QListWidget, QHBoxLayout,
-                            QGroupBox, QFrame, QSizePolicy, QComboBox, QColorDialog)
+                            QGroupBox, QFrame, QSizePolicy, QComboBox, QColorDialog,
+                            QLineEdit, QMessageBox, QApplication)
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QPixmap, QColor
+import os
 
 from ui.image_item import ImageItem
 
@@ -27,6 +29,7 @@ class ToolPanel(QWidget):
     border_width_changed = pyqtSignal(int)    # 边界线宽度变更信号
     handle_color_changed = pyqtSignal(QColor)  # 新增：缩放手柄颜色变更信号
     handle_size_changed = pyqtSignal(int)      # 新增：缩放手柄大小变更信号
+    export_signal = pyqtSignal(str, str)  # 新增：导出信号，参数为PresetID和导出路径
     
     def __init__(self, parent=None):
         super(ToolPanel, self).__init__(parent)
@@ -46,11 +49,20 @@ class ToolPanel(QWidget):
         self.init_add_image_tab()
         self.tab_widget.addTab(self.add_image_tab, "工具")
         
-        
         # 视图设置面板
         self.view_settings_tab = QWidget()
         self.init_view_settings_tab()
         self.tab_widget.addTab(self.view_settings_tab, "视图设置")
+        
+        # 细节属性面板
+        self.detail_property_tab = QWidget()
+        self.init_detail_property_tab()
+        self.tab_widget.addTab(self.detail_property_tab, "细节属性")
+        
+        # 导出面板
+        self.export_tab = QWidget()
+        self.init_export_tab()
+        self.tab_widget.addTab(self.export_tab, "导出")
         
         layout.addWidget(self.tab_widget)
         self.setLayout(layout)
@@ -66,7 +78,6 @@ class ToolPanel(QWidget):
         op_layout = QGridLayout()
         self.new_btn = QPushButton("新建")
         self.open_btn = QPushButton("打开")
-        self.save_btn = QPushButton("保存")
         self.zoom_in_btn = QPushButton("放大选中图片")
         self.zoom_out_btn = QPushButton("缩小选中图片")
         self.fit_view_btn = QPushButton("适应视图")
@@ -75,8 +86,7 @@ class ToolPanel(QWidget):
         # 两行布局
         op_layout.addWidget(self.new_btn, 0, 0)
         op_layout.addWidget(self.open_btn, 0, 1)
-        op_layout.addWidget(self.save_btn, 0, 2)
-        op_layout.addWidget(self.fit_view_btn, 0, 3)
+        op_layout.addWidget(self.fit_view_btn, 0, 2)
         op_layout.addWidget(self.zoom_in_btn, 1, 0)
         op_layout.addWidget(self.zoom_out_btn, 1, 1)
         op_layout.addWidget(self.add_image_btn, 1, 2)
@@ -246,6 +256,95 @@ class ToolPanel(QWidget):
         layout.addWidget(line2)
         
         # 其他视图设置（未来可以添加）
+        
+        # 添加占位空间
+        layout.addStretch()
+        
+    def init_detail_property_tab(self):
+        """
+        初始化细节属性面板
+        """
+        layout = QVBoxLayout(self.detail_property_tab)
+        
+        # 贴图属性组
+        property_group = QGroupBox("贴图属性")
+        property_layout = QGridLayout()
+        
+        # 名称
+        property_layout.addWidget(QLabel("名称:"), 0, 0)
+        self.name_label = QLabel("未选择贴图")
+        property_layout.addWidget(self.name_label, 0, 1)
+        
+        # 文件路径
+        property_layout.addWidget(QLabel("文件路径:"), 1, 0)
+        path_layout = QHBoxLayout()
+        self.path_label = QLabel("未选择贴图")
+        self.path_label.setToolTip("完整文件路径")  # 添加工具提示，鼠标悬停时显示完整路径
+        path_layout.addWidget(self.path_label)
+        
+        # 添加复制按钮
+        self.copy_path_btn = QPushButton("复制")
+        self.copy_path_btn.setEnabled(False)  # 默认禁用
+        self.copy_path_btn.clicked.connect(self.on_copy_path_clicked)
+        path_layout.addWidget(self.copy_path_btn)
+        
+        property_layout.addLayout(path_layout, 1, 1)
+        
+        # 材质球名称
+        property_layout.addWidget(QLabel("材质球名称:"), 2, 0)
+        self.material_edit = QLineEdit()
+        self.material_edit.setPlaceholderText("请输入材质球名称")
+        self.material_edit.setEnabled(False)  # 默认禁用，只有在选中贴图时启用
+        self.material_edit.textChanged.connect(self.on_material_name_changed)
+        property_layout.addWidget(self.material_edit, 2, 1)
+        
+        property_group.setLayout(property_layout)
+        layout.addWidget(property_group)
+        
+        # 添加占位空间
+        layout.addStretch()
+        
+    def init_export_tab(self):
+        """
+        初始化导出面板
+        """
+        layout = QVBoxLayout(self.export_tab)
+        
+        # PresetID设置组
+        preset_group = QGroupBox("PresetID设置")
+        preset_layout = QGridLayout()
+        
+        # PresetID输入
+        preset_layout.addWidget(QLabel("PresetID:"), 0, 0)
+        self.preset_id_edit = QLineEdit()
+        self.preset_id_edit.setPlaceholderText("请输入PresetID")
+        preset_layout.addWidget(self.preset_id_edit, 0, 1)
+        
+        preset_group.setLayout(preset_layout)
+        layout.addWidget(preset_group)
+        
+        # 导出路径设置组
+        path_group = QGroupBox("导出路径设置")
+        path_layout = QGridLayout()
+        
+        # 导出路径输入
+        path_layout.addWidget(QLabel("导出路径:"), 0, 0)
+        self.export_path_edit = QLineEdit()
+        self.export_path_edit.setPlaceholderText("请选择导出路径")
+        path_layout.addWidget(self.export_path_edit, 0, 1)
+        
+        # 浏览按钮
+        self.browse_btn = QPushButton("浏览...")
+        self.browse_btn.clicked.connect(self.on_browse_export_path)
+        path_layout.addWidget(self.browse_btn, 0, 2)
+        
+        path_group.setLayout(path_layout)
+        layout.addWidget(path_group)
+        
+        # 导出按钮
+        self.export_btn = QPushButton("导出")
+        self.export_btn.clicked.connect(self.on_export_clicked)
+        layout.addWidget(self.export_btn)
         
         # 添加占位空间
         layout.addStretch()
@@ -436,3 +535,121 @@ class ToolPanel(QWidget):
                 self.canvas_size_combo.setCurrentIndex(0)
         else:
             self.canvas_size_combo.setCurrentIndex(0)
+
+    def on_browse_export_path(self):
+        """
+        浏览导出路径按钮点击事件处理
+        """
+        file_dialog = QFileDialog()
+        file_path, _ = file_dialog.getSaveFileName(
+            self, "选择导出路径", "", "布局数据 (*.json)"
+        )
+        
+        if file_path:
+            if not file_path.endswith(".json"):
+                file_path += ".json"
+            self.export_path_edit.setText(file_path)
+            
+    def on_export_clicked(self):
+        """
+        导出按钮点击事件处理
+        """
+        preset_id = self.preset_id_edit.text().strip()
+        export_path = self.export_path_edit.text().strip()
+        
+        if not preset_id:
+            QMessageBox.warning(self, "警告", "请先填写PresetID")
+            return
+            
+        if not export_path:
+            QMessageBox.warning(self, "警告", "请选择导出路径")
+            return
+            
+        # 发送导出信号
+        self.export_signal.emit(preset_id, export_path)
+        
+    def update_detail_property(self, image_item):
+        """
+        更新细节属性面板的值
+        """
+        if image_item:
+            self.name_label.setText(image_item.name)
+            
+            # 优化文件路径显示，显示完整路径但限制长度
+            filepath = image_item.filepath
+            if filepath:
+                # 显示完整路径，但限制长度为20个字符
+                if len(filepath) > 20:
+                    display_text = filepath[:20] + "..."
+                else:
+                    display_text = filepath
+                self.path_label.setText(display_text)
+                self.path_label.setToolTip(filepath)  # 设置工具提示为完整路径
+                self.copy_path_btn.setEnabled(True)  # 启用复制按钮
+            else:
+                self.path_label.setText("未设置")
+                self.path_label.setToolTip("")
+                self.copy_path_btn.setEnabled(False)  # 禁用复制按钮
+            
+            # 设置材质球名称
+            material_name = getattr(image_item, "material_name", "")
+            self.material_edit.setText(material_name)
+            self.material_edit.setEnabled(True)  # 启用编辑
+        else:
+            self.name_label.setText("未选择贴图")
+            self.path_label.setText("未选择贴图")
+            self.path_label.setToolTip("")
+            self.copy_path_btn.setEnabled(False)  # 禁用复制按钮
+            self.material_edit.setText("")
+            self.material_edit.setEnabled(False)  # 禁用编辑
+            
+    def on_material_name_changed(self, text):
+        """
+        材质球名称变更事件处理
+        """
+        # 获取主窗口
+        main_window = self.window()
+        if not main_window:
+            return
+            
+        # 获取画布
+        canvas = main_window.canvas
+        if not canvas:
+            return
+            
+        # 获取选中的贴图项
+        selected_items = [item for item in canvas.scene.selectedItems() 
+                         if isinstance(item, ImageItem)]
+        
+        if len(selected_items) == 1:
+            # 更新材质球名称
+            selected_items[0].material_name = text
+            
+    def on_copy_path_clicked(self):
+        """
+        复制文件路径按钮点击事件处理
+        """
+        # 获取主窗口
+        main_window = self.window()
+        if not main_window:
+            return
+            
+        # 获取画布
+        canvas = main_window.canvas
+        if not canvas:
+            return
+            
+        # 获取选中的贴图项
+        selected_items = [item for item in canvas.scene.selectedItems() 
+                         if isinstance(item, ImageItem)]
+        
+        if len(selected_items) == 1:
+            # 获取完整文件路径
+            filepath = selected_items[0].filepath
+            if filepath:
+                # 复制到剪贴板
+                clipboard = QApplication.clipboard()
+                clipboard.setText(filepath)
+                
+                # 显示提示信息
+                main_window.statusBar().showMessage(f"已复制文件路径: {filepath}", 3000)

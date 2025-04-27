@@ -189,33 +189,30 @@ class MainWindow(QMainWindow):
         """
         连接信号和槽
         """
-        # 连接添加贴图信号
+        # 工具面板信号
         self.tool_panel.add_image_signal.connect(self.add_image)
-        
-        # 连接网格设置信号
         self.tool_panel.grid_visible_changed.connect(self.canvas.set_grid_visible)
         self.tool_panel.grid_size_changed.connect(self.canvas.set_grid_size)
+        self.tool_panel.canvas_size_changed.connect(self.canvas.set_canvas_size)
         self.tool_panel.snap_to_grid_changed.connect(self.canvas.set_snap_to_grid)
         self.tool_panel.grid_color_changed.connect(self.canvas.set_grid_color)
         self.tool_panel.grid_width_changed.connect(self.canvas.set_grid_width)
         self.tool_panel.border_color_changed.connect(self.canvas.set_border_color)
         self.tool_panel.border_width_changed.connect(self.canvas.set_border_width)
+        self.tool_panel.handle_color_changed.connect(self.set_handle_color_for_all)
+        self.tool_panel.handle_size_changed.connect(self.set_handle_size_for_all)
+        self.tool_panel.export_signal.connect(self.export_layout_with_preset)
         
-        # 连接画布大小设置信号
-        self.tool_panel.canvas_size_changed.connect(self.canvas.set_canvas_size)
+        # 画布信号
+        self.canvas.scene.selectionChanged.connect(self.on_selection_changed)
         
-        # 连接右侧主操作按钮
+        # 右侧主操作按钮
         self.tool_panel.new_btn.clicked.connect(self.new_file)
         self.tool_panel.open_btn.clicked.connect(self.open_file)
-        self.tool_panel.save_btn.clicked.connect(self.save_file)
         self.tool_panel.zoom_in_btn.clicked.connect(self.zoom_selected_image_in)
         self.tool_panel.zoom_out_btn.clicked.connect(self.zoom_selected_image_out)
         self.tool_panel.delete_btn.clicked.connect(self.delete_selected_images)
         self.tool_panel.fit_view_btn.clicked.connect(self.canvas.fit_in_view)
-        
-        # 新增：缩放手柄颜色和大小
-        self.tool_panel.handle_color_changed.connect(self.set_handle_color_for_all)
-        self.tool_panel.handle_size_changed.connect(self.set_handle_size_for_all)
 
     def zoom_selected_image_in(self):
         """
@@ -650,3 +647,47 @@ class MainWindow(QMainWindow):
             self.canvas.scene.removeItem(item)
             
         self.status_bar.showMessage(f"已删除 {len(selected_items)} 个贴图")
+
+    def on_selection_changed(self):
+        """
+        处理场景选择变更事件
+        """
+        # 获取选中的贴图项
+        selected_items = [item for item in self.canvas.scene.selectedItems() 
+                         if isinstance(item, ImageItem)]
+        
+        # 更新细节属性面板
+        if len(selected_items) == 1:
+            self.tool_panel.update_detail_property(selected_items[0])
+        else:
+            self.tool_panel.update_detail_property(None)
+            
+    def export_layout_with_preset(self, preset_id, export_path):
+        """
+        使用PresetID导出布局数据
+        """
+        try:
+            layout_data = {
+                "version": "1.0",
+                "preset_id": preset_id,
+                "canvas": {
+                    "width": self.canvas.scene.width(),
+                    "height": self.canvas.scene.height()
+                },
+                "grid": self.canvas.get_grid_settings(),
+                "images": []
+            }
+            
+            # 收集所有贴图项
+            for item in self.canvas.scene.items():
+                if isinstance(item, ImageItem):
+                    layout_data["images"].append(item.to_dict())
+            
+            with open(export_path, 'w') as f:
+                json.dump(layout_data, f, indent=2)
+            
+            self.status_bar.showMessage(f"已导出布局数据到: {export_path}")
+            QMessageBox.information(self, "导出成功", f"布局数据已导出到: {export_path}")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "错误", f"导出布局数据失败: {str(e)}")

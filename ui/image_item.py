@@ -26,6 +26,7 @@ class ImageItem(QGraphicsItem):
         self.name = name or filepath.split("/")[-1]
         self.filepath = filepath
         self.pixmap = QPixmap(filepath)
+        self.material_name = ""  # 新增：材质球名称
         
         # 位置和大小
         self.width = self.pixmap.width()
@@ -278,6 +279,7 @@ class ImageItem(QGraphicsItem):
             "id": str(self.id),
             "name": self.name,
             "filepath": self.filepath,
+            "material_name": self.material_name,  # 新增：材质球名称
             "position": {
                 "x": pos_x_percent,
                 "y": pos_y_percent
