@@ -439,26 +439,36 @@ class MainWindow(QMainWindow):
         
         event.accept()
     
-    def add_image(self, filepath, material_name=""):
+    def add_image(self, filepath, material_name, width=None, height=None):
         """
-        添加贴图到画布
-        
-        Args:
-            filepath: 贴图文件路径
-            material_name: 材质球名称
+        添加图片到画布
+        :param filepath: 图片文件路径
+        :param material_name: 材质球名称
+        :param width: 图片宽度，如果为None则使用原始宽度
+        :param height: 图片高度，如果为None则使用原始高度
         """
-        # 创建贴图项
-        image_item = ImageItem(filepath)
-        
-        # 设置材质球名称
-        if material_name:
-            image_item.material_name = material_name
-        
-        # 添加到画布
-        self.canvas.add_image(image_item)
-        
-        # 更新状态栏
-        self.statusBar().showMessage(f"已添加贴图: {os.path.basename(filepath)}", 3000)
+        try:
+            # 创建图片项
+            image_item = ImageItem(filepath, material_name)
+            
+            # 如果指定了大小，则调整图片大小
+            if width is not None and height is not None:
+                image_item.resize(width, height)
+            
+            # 添加到画布
+            self.canvas.add_image(image_item)
+            
+            # 更新材质球列表
+            self.update_material_list()
+            
+        except Exception as e:
+            QMessageBox.critical(self, "错误", f"添加图片失败：{str(e)}")
+            
+    def on_add_image(self, filepath, material_name, width, height):
+        """
+        处理添加图片信号
+        """
+        self.add_image(filepath, material_name, width, height)
     
     def new_file(self):
         """
@@ -691,3 +701,20 @@ class MainWindow(QMainWindow):
             
         except Exception as e:
             QMessageBox.critical(self, "错误", f"导出布局数据失败: {str(e)}")
+
+    def update_material_list(self):
+        """
+        更新材质球列表
+        """
+        # 获取所有贴图项
+        image_items = [item for item in self.canvas.scene.items() 
+                      if isinstance(item, ImageItem)]
+        
+        # 更新工具面板的细节属性
+        if len(image_items) == 1:
+            self.tool_panel.update_detail_property(image_items[0])
+        else:
+            self.tool_panel.update_detail_property(None)
+            
+        # 更新状态栏
+        self.status_bar.showMessage(f"当前共有 {len(image_items)} 个贴图")

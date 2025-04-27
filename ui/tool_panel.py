@@ -18,7 +18,7 @@ class ToolPanel(QWidget):
     """
     
     # 自定义信号
-    add_image_signal = pyqtSignal(str, str)  # 添加贴图信号，参数为文件路径和材质球名称
+    add_image_signal = pyqtSignal(str, str, int, int)  # 添加贴图信号，参数为文件路径、材质球名称、宽度、高度
     grid_visible_changed = pyqtSignal(bool)  # 网格可见性变更信号
     grid_size_changed = pyqtSignal(float)  # 网格大小变更信号
     canvas_size_changed = pyqtSignal(int, int)  # 画布大小变更信号，参数为宽度和高度
@@ -29,7 +29,7 @@ class ToolPanel(QWidget):
     border_width_changed = pyqtSignal(int)    # 边界线宽度变更信号
     handle_color_changed = pyqtSignal(QColor)  # 新增：缩放手柄颜色变更信号
     handle_size_changed = pyqtSignal(int)      # 新增：缩放手柄大小变更信号
-    export_signal = pyqtSignal(str, str)  # 新增：导出信号，参数为PresetID和导出路径
+    export_signal = pyqtSignal(str, str)  # 导出信号，参数为PresetID和导出路径
     
     def __init__(self, parent=None):
         super(ToolPanel, self).__init__(parent)
@@ -379,34 +379,21 @@ class ToolPanel(QWidget):
         
     def on_add_image_clicked(self):
         """
-        添加贴图按钮点击事件处理
+        添加图片按钮点击事件处理
         """
-        file_dialog = QFileDialog()
-        file_path, _ = file_dialog.getOpenFileName(
-            self, "选择贴图", "", "图片文件 (*.png *.jpg *.jpeg *.bmp *.gif *.tga)"
+        filepath, _ = QFileDialog.getOpenFileName(
+            self,
+            "选择图片",
+            "",
+            "图片文件 (*.png *.jpg *.jpeg *.bmp *.gif)"
         )
         
-        if file_path:
-            # 弹出材质球名称输入对话框
-            dialog = MaterialNameDialog(self, file_path)
+        if filepath:
+            dialog = MaterialNameDialog(self, filepath)
             if dialog.exec_() == QDialog.Accepted:
                 material_name = dialog.get_material_name()
-                
-                # 更新预览
-                pixmap = QPixmap(file_path)
-                if not pixmap.isNull():
-                    # 设置预览图片，保持比例
-                    self.preview_label.setPixmap(
-                        pixmap.scaled(
-                            self.preview_label.width(), 
-                            self.preview_label.height(),
-                            Qt.KeepAspectRatio,
-                            Qt.SmoothTransformation
-                        )
-                    )
-                
-                # 发送添加贴图信号，包含材质球名称
-                self.add_image_signal.emit(file_path, material_name)
+                width, height = dialog.get_resize_dimensions()
+                self.add_image_signal.emit(filepath, material_name, width, height)
     
     def on_grid_visible_changed(self, state):
         """
@@ -667,6 +654,10 @@ class MaterialNameDialog(QDialog):
         super(MaterialNameDialog, self).__init__(parent)
         self.filepath = filepath
         self.material_name = ""
+        self.resize_width = 0
+        self.resize_height = 0
+        self.original_width = 0
+        self.original_height = 0
         self.init_ui()
         
     def init_ui(self):
@@ -698,6 +689,59 @@ class MaterialNameDialog(QDialog):
         form_layout.addRow("材质球名称:", self.material_edit)
         layout.addLayout(form_layout)
         
+        # 图片大小设置
+        size_group = QGroupBox("图片大小设置")
+        size_layout = QVBoxLayout()
+        
+        # 原始大小显示
+        if self.filepath:
+            pixmap = QPixmap(self.filepath)
+            if not pixmap.isNull():
+                self.original_width = pixmap.width()
+                self.original_height = pixmap.height()
+                original_size_label = QLabel(f"原始大小: {self.original_width} x {self.original_height}")
+                size_layout.addWidget(original_size_label)
+        
+        # 调整大小选项
+        resize_checkbox = QCheckBox("调整图片大小")
+        resize_checkbox.setChecked(False)
+        size_layout.addWidget(resize_checkbox)
+        
+        # 宽度和高度输入
+        size_input_layout = QHBoxLayout()
+        self.width_edit = QSpinBox()
+        self.width_edit.setRange(1, 8192)
+        self.width_edit.setValue(self.original_width)
+        self.width_edit.setEnabled(False)
+        
+        self.height_edit = QSpinBox()
+        self.height_edit.setRange(1, 8192)
+        self.height_edit.setValue(self.original_height)
+        self.height_edit.setEnabled(False)
+        
+        size_input_layout.addWidget(QLabel("宽度:"))
+        size_input_layout.addWidget(self.width_edit)
+        size_input_layout.addWidget(QLabel("高度:"))
+        size_input_layout.addWidget(self.height_edit)
+        size_layout.addLayout(size_input_layout)
+        
+        # 保持宽高比选项
+        self.keep_aspect_ratio = QCheckBox("保持宽高比")
+        self.keep_aspect_ratio.setChecked(True)
+        size_layout.addWidget(self.keep_aspect_ratio)
+        
+        # 连接信号
+        resize_checkbox.toggled.connect(lambda checked: self.width_edit.setEnabled(checked))
+        resize_checkbox.toggled.connect(lambda checked: self.height_edit.setEnabled(checked))
+        resize_checkbox.toggled.connect(lambda checked: self.keep_aspect_ratio.setEnabled(checked))
+        
+        self.width_edit.valueChanged.connect(self.on_width_changed)
+        self.height_edit.valueChanged.connect(self.on_height_changed)
+        self.keep_aspect_ratio.toggled.connect(self.on_keep_aspect_ratio_changed)
+        
+        size_group.setLayout(size_layout)
+        layout.addWidget(size_group)
+        
         # 按钮
         button_layout = QHBoxLayout()
         self.ok_button = QPushButton("确定")
@@ -711,11 +755,48 @@ class MaterialNameDialog(QDialog):
         # 设置默认按钮
         self.ok_button.setDefault(True)
         
+    def on_width_changed(self, value):
+        """
+        宽度变化时，如果保持宽高比，则同步更新高度
+        """
+        if self.keep_aspect_ratio.isChecked() and self.original_width > 0:
+            ratio = self.original_height / self.original_width
+            new_height = int(value * ratio)
+            self.height_edit.blockSignals(True)
+            self.height_edit.setValue(new_height)
+            self.height_edit.blockSignals(False)
+            
+    def on_height_changed(self, value):
+        """
+        高度变化时，如果保持宽高比，则同步更新宽度
+        """
+        if self.keep_aspect_ratio.isChecked() and self.original_height > 0:
+            ratio = self.original_width / self.original_height
+            new_width = int(value * ratio)
+            self.width_edit.blockSignals(True)
+            self.width_edit.setValue(new_width)
+            self.width_edit.blockSignals(False)
+            
+    def on_keep_aspect_ratio_changed(self, checked):
+        """
+        保持宽高比选项变化时，如果选中，则根据当前宽度更新高度
+        """
+        if checked:
+            self.on_width_changed(self.width_edit.value())
+        
     def get_material_name(self):
         """
         获取输入的材质球名称
         """
         return self.material_edit.text().strip()
+        
+    def get_resize_dimensions(self):
+        """
+        获取调整后的图片尺寸
+        """
+        if self.width_edit.isEnabled():
+            return self.width_edit.value(), self.height_edit.value()
+        return 0, 0
         
     def accept(self):
         """
@@ -725,4 +806,8 @@ class MaterialNameDialog(QDialog):
         if not self.material_name:
             QMessageBox.warning(self, "警告", "请输入材质球名称")
             return
+            
+        # 获取调整后的尺寸
+        self.resize_width, self.resize_height = self.get_resize_dimensions()
+            
         super(MaterialNameDialog, self).accept()
