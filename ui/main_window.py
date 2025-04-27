@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (QMainWindow, QAction, QFileDialog, QSplitter,
                              QStatusBar, QMessageBox, QToolBar, QWidget,
                              QVBoxLayout)
 from PyQt5.QtCore import Qt, QSettings
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QColor
 
 from ui.canvas_widget import CanvasWidget
 from ui.tool_panel import ToolPanel
@@ -113,10 +113,21 @@ class MainWindow(QMainWindow):
         # 编辑菜单
         edit_menu = self.menuBar().addMenu("编辑")
         
-        delete_action = QAction("删除", self)
-        delete_action.setShortcut("Delete")
-        delete_action.triggered.connect(self.delete_selected_images)
-        edit_menu.addAction(delete_action)
+        # 主题切换
+        theme_menu = edit_menu.addMenu("主题")
+        
+        light_theme_action = QAction("浅色主题", self)
+        light_theme_action.setCheckable(True)
+        light_theme_action.triggered.connect(lambda: self.switch_theme("light"))
+        theme_menu.addAction(light_theme_action)
+        
+        dark_theme_action = QAction("深色主题", self)
+        dark_theme_action.setCheckable(True)
+        dark_theme_action.triggered.connect(lambda: self.switch_theme("dark"))
+        theme_menu.addAction(dark_theme_action)
+        
+        # 设置主题动作组
+        self.theme_actions = [light_theme_action, dark_theme_action]
         
         # 视图菜单
         view_menu = self.menuBar().addMenu("视图")
@@ -285,6 +296,131 @@ class MainWindow(QMainWindow):
             self.canvas.set_canvas_size(width, height)
             self.tool_panel.set_canvas_size(width, height)
             
+        # 读取上次的主题设置
+        if self.settings.contains("theme/current"):
+            theme = self.settings.value("theme/current", type=str)
+            self.switch_theme(theme)
+        else:
+            # 默认使用浅色主题
+            self.switch_theme("light")
+
+    def switch_theme(self, theme):
+        """
+        切换主题
+        """
+        if theme == "light":
+            # 浅色主题
+            self.setStyleSheet("""
+                QMainWindow {
+                    background-color: #f0f0f0;
+                }
+                QMenuBar {
+                    background-color: #f0f0f0;
+                    color: #000000;
+                }
+                QMenuBar::item:selected {
+                    background-color: #e0e0e0;
+                }
+                QMenu {
+                    background-color: #f0f0f0;
+                    color: #000000;
+                }
+                QMenu::item:selected {
+                    background-color: #e0e0e0;
+                }
+                QWidget {
+                    background-color: #f0f0f0;
+                    color: #000000;
+                }
+                QGroupBox {
+                    border: 1px solid #c0c0c0;
+                    border-radius: 5px;
+                    margin-top: 1ex;
+                    font-weight: bold;
+                }
+                QGroupBox::title {
+                    subcontrol-origin: margin;
+                    left: 10px;
+                    padding: 0 3px 0 3px;
+                }
+                QPushButton {
+                    background-color: #e0e0e0;
+                    border: 1px solid #c0c0c0;
+                    border-radius: 3px;
+                    padding: 5px;
+                }
+                QPushButton:hover {
+                    background-color: #d0d0d0;
+                }
+                QPushButton:pressed {
+                    background-color: #c0c0c0;
+                }
+            """)
+            # 设置画布背景颜色
+            self.canvas.setBackgroundBrush(QColor(240, 240, 240))
+            # 更新菜单项选中状态
+            self.theme_actions[0].setChecked(True)
+            self.theme_actions[1].setChecked(False)
+        else:
+            # 深色主题
+            self.setStyleSheet("""
+                QMainWindow {
+                    background-color: #2d2d2d;
+                }
+                QMenuBar {
+                    background-color: #2d2d2d;
+                    color: #ffffff;
+                }
+                QMenuBar::item:selected {
+                    background-color: #3d3d3d;
+                }
+                QMenu {
+                    background-color: #2d2d2d;
+                    color: #ffffff;
+                }
+                QMenu::item:selected {
+                    background-color: #3d3d3d;
+                }
+                QWidget {
+                    background-color: #2d2d2d;
+                    color: #ffffff;
+                }
+                QGroupBox {
+                    border: 1px solid #3d3d3d;
+                    border-radius: 5px;
+                    margin-top: 1ex;
+                    font-weight: bold;
+                }
+                QGroupBox::title {
+                    subcontrol-origin: margin;
+                    left: 10px;
+                    padding: 0 3px 0 3px;
+                }
+                QPushButton {
+                    background-color: #3d3d3d;
+                    border: 1px solid #4d4d4d;
+                    border-radius: 3px;
+                    padding: 5px;
+                }
+                QPushButton:hover {
+                    background-color: #4d4d4d;
+                }
+                QPushButton:pressed {
+                    background-color: #5d5d5d;
+                }
+            """)
+            # 设置画布背景颜色
+            self.canvas.setBackgroundBrush(QColor(45, 45, 45))
+            # 更新菜单项选中状态
+            self.theme_actions[0].setChecked(False)
+            self.theme_actions[1].setChecked(True)
+            
+        # 保存主题设置
+        self.settings.setValue("theme/current", theme)
+        
+        # 更新状态栏
+        self.status_bar.showMessage(f"已切换到{theme}主题")
+
     def closeEvent(self, event):
         """
         关闭事件处理，保存应用设置
