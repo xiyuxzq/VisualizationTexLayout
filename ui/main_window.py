@@ -517,23 +517,27 @@ class MainWindow(QMainWindow):
                 if "images" in layout_data:
                     for img_data in layout_data["images"]:
                         filepath = img_data.get("filepath", "")
+                        material_name = img_data.get("material_name", "")
+                        
                         if os.path.exists(filepath):
-                            image_item = self.add_image(filepath)
+                            # 获取贴图尺寸
+                            size = img_data.get("size", {})
+                            width = size.get("width", 0)
+                            height = size.get("height", 0)
+                            
+                            # 创建贴图项
+                            image_item = self.add_image(filepath, material_name, width, height)
+                            
                             if image_item:
                                 # 设置位置
                                 pos = img_data.get("position", {})
                                 x_percent = pos.get("x", 0)
                                 y_percent = pos.get("y", 0)
-                                # 将百分比转换为像素
-                                x = (x_percent / 100.0) * self.canvas.scene.width()
-                                y = (y_percent / 100.0) * self.canvas.scene.height()
-                                image_item.setPos(x, y)
                                 
-                                # 设置缩放
-                                scale = img_data.get("scale", {})
-                                scale_x = scale.get("x", 1.0)
-                                scale_y = scale.get("y", 1.0)
-                                image_item.set_scale(scale_x, scale_y)
+                                # 将百分比转换为像素
+                                x = x_percent * self.canvas.scene.width()
+                                y = y_percent * self.canvas.scene.height()
+                                image_item.setPos(x, y)
                                 
                                 # 设置旋转
                                 rotation = img_data.get("rotation", 0)

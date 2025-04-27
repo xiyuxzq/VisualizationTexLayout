@@ -32,6 +32,10 @@ class ImageItem(QGraphicsItem):
         self.width = self.pixmap.width()
         self.height = self.pixmap.height()
         
+        # 用户设置的初始尺寸（默认为原始尺寸）
+        self.initial_width = self.width
+        self.initial_height = self.height
+        
         # 缩放因子
         self.scale_x = 1.0
         self.scale_y = 1.0
@@ -220,6 +224,10 @@ class ImageItem(QGraphicsItem):
         调整贴图大小
         """
         self.prepareGeometryChange()
+        # 记录用户设置的初始尺寸
+        self.initial_width = width
+        self.initial_height = height
+        # 更新缩放比例
         self.scale_x = width / self.width if self.width else 1.0
         self.scale_y = height / self.height if self.height else 1.0
         self.update()
@@ -275,22 +283,38 @@ class ImageItem(QGraphicsItem):
             pos_x_percent = 0
             pos_y_percent = 0
             
+        # 计算实际显示尺寸（考虑缩放）
+        actual_width = self.width * self.scale_x
+        actual_height = self.height * self.scale_y
+        
+        # 计算相对于用户设置初始尺寸的缩放比例
+        if self.initial_width > 0 and self.initial_height > 0:
+            relative_scale_x = actual_width / self.initial_width
+            relative_scale_y = actual_height / self.initial_height
+        else:
+            relative_scale_x = 1.0
+            relative_scale_y = 1.0
+            
         return {
             "id": str(self.id),
             "name": self.name,
             "filepath": self.filepath,
-            "material_name": self.material_name,  # 新增：材质球名称
+            "material_name": self.material_name,
             "position": {
                 "x": pos_x_percent,
                 "y": pos_y_percent
             },
             "size": {
+                "width": actual_width,
+                "height": actual_height
+            },
+            "original_size": {
                 "width": self.width,
                 "height": self.height
             },
             "scale": {
-                "x": self.scale_x,
-                "y": self.scale_y
+                "x": relative_scale_x,
+                "y": relative_scale_y
             },
             "rotation": self.rotation_angle,
             "zIndex": self.zValue(),
