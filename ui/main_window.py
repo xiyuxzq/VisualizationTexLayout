@@ -286,6 +286,8 @@ class MainWindow(QMainWindow):
         self.current_file = None
         self.canvas.set_canvas_size(1024, 1024)
         self.tool_panel.set_canvas_size(1024, 1024)
+        # 清除预览图
+        self.tool_panel.clear_preview()
         self.status_bar.showMessage("已创建新文件")
     
     def open_file(self):

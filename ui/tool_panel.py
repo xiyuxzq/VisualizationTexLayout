@@ -363,6 +363,13 @@ class ToolPanel(QWidget):
     def on_handle_size_changed(self, value):
         self.handle_size_changed.emit(value)
     
+    def clear_preview(self):
+        """
+        清除预览图
+        """
+        self.preview_label.setText("未选择贴图")
+        self.preview_label.setPixmap(QPixmap())
+    
     def update_property_values(self, image_item):
         """
         更新属性编辑面板的值

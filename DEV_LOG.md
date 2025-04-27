@@ -90,6 +90,7 @@ VisualizationTexLayout/
   - `on_grid_visible_changed()`, `on_grid_size_changed()`: 处理网格设置变更
   - `update_property_values()`: 更新属性编辑面板的值
   - `update_layer_list()`: 更新层级列表
+  - `clear_preview()`: 清除预览图片
 - **调用关系**:
   - 由 `MainWindow` 创建和管理
   - 发出 `add_image_signal`、`grid_visible_changed` 和 `grid_size_changed` 信号，由 `MainWindow` 处理
@@ -550,6 +551,12 @@ graph TD
 - 添加状态栏反馈，显示删除操作结果
 - 优化用户体验，支持多选删除
 
+### v0.2.13 (2024-02-21)
+- 修复新建文件时预览图未清除的问题
+  - 在ToolPanel类中添加clear_preview方法
+  - 在MainWindow的new_file方法中调用clear_preview
+  - 优化用户体验，确保新建文件时界面状态完全重置
+
 ## 9. 版本历史
 
 ### v0.1.0
@@ -621,6 +628,12 @@ graph TD
 - 支持Delete快捷键删除贴图
 - 在编辑菜单和贴图菜单中添加删除选项
 - 优化用户反馈，显示删除操作结果
+
+### v0.2.13 (2024-02-21)
+- 修复新建文件时预览图未清除的问题
+  - 在ToolPanel类中添加clear_preview方法
+  - 在MainWindow的new_file方法中调用clear_preview
+  - 优化用户体验，确保新建文件时界面状态完全重置
 
 ---
 
