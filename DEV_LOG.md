@@ -50,13 +50,21 @@ VisualizationTexLayout/
   - `create_menu_bar()`: 创建应用的菜单栏及菜单项
   - `create_tool_bar()`: 创建工具栏及其按钮
   - `connect_signals()`: 连接信号和槽
-  - `add_image()`: 添加贴图到画布
+  - `add_image()`: 添加贴图到画布，支持设置材质球名称和尺寸
+  - `on_add_image()`: 处理添加贴图信号
   - `new_file()`, `open_file()`, `save_file()`, `save_file_as()`: 文件操作方法
   - `export_layout()`: 导出布局数据
+  - `export_layout_with_preset()`: 导出布局数据，包含预设ID
+  - `on_selection_changed()`: 处理选中项变更事件
+  - `delete_selected_images()`: 删除选中的贴图
+  - `zoom_selected_image_in()`: 放大选中的贴图
+  - `zoom_selected_image_out()`: 缩小选中的贴图
+  - `update_material_list()`: 更新材质列表
 - **调用关系**:
   - 创建和管理 `CanvasWidget` 和 `ToolPanel` 实例
-  - 处理 `ToolPanel` 发出的添加贴图信号
+  - 处理 `ToolPanel` 发出的各种信号
   - 创建 `ImageItem` 并添加到 `CanvasWidget`
+  - 管理贴图的选中状态和属性更新
 
 #### `ui/canvas_widget.py`
 
@@ -80,20 +88,39 @@ VisualizationTexLayout/
 - **功能**: 定义工具面板，包含添加贴图和属性编辑功能
 - **主要类**:
   - `ToolPanel`: 继承自QWidget，是右侧工具面板
+  - `MaterialNameDialog`: 继承自QDialog，用于输入材质球名称和设置图片尺寸
 - **主要方法**:
   - `init_ui()`: 初始化界面组件和布局
   - `init_add_image_tab()`: 初始化添加贴图标签页
-  - `init_property_tab()`: 初始化属性编辑标签页
-  - `init_layer_tab()`: 初始化层级管理标签页
   - `init_view_settings_tab()`: 初始化视图设置标签页
+  - `init_detail_property_tab()`: 初始化细节属性标签页
+  - `init_export_tab()`: 初始化导出标签页
   - `on_add_image_clicked()`: 处理添加贴图按钮点击事件
   - `on_grid_visible_changed()`, `on_grid_size_changed()`: 处理网格设置变更
   - `update_property_values()`: 更新属性编辑面板的值
   - `update_layer_list()`: 更新层级列表
   - `clear_preview()`: 清除预览图片
+  - `update_detail_property()`: 更新细节属性面板的值
+  - `on_material_name_changed()`: 处理材质球名称变更事件
+  - `on_copy_path_clicked()`: 处理复制文件路径按钮点击事件
+  - `on_export_clicked()`: 处理导出按钮点击事件
+- **自定义信号**:
+  - `add_image_signal`: 添加贴图信号，参数为文件路径、材质球名称、宽度、高度
+  - `grid_visible_changed`: 网格可见性变更信号
+  - `grid_size_changed`: 网格大小变更信号
+  - `canvas_size_changed`: 画布大小变更信号
+  - `snap_to_grid_changed`: 网格吸附变更信号
+  - `grid_color_changed`: 网格颜色变更信号
+  - `grid_width_changed`: 网格线宽度变更信号
+  - `border_color_changed`: 边界颜色变更信号
+  - `border_width_changed`: 边界线宽度变更信号
+  - `handle_color_changed`: 缩放手柄颜色变更信号
+  - `handle_size_changed`: 缩放手柄大小变更信号
+  - `export_signal`: 导出信号，参数为PresetID和导出路径
 - **调用关系**:
   - 由 `MainWindow` 创建和管理
-  - 发出 `add_image_signal`、`grid_visible_changed` 和 `grid_size_changed` 信号，由 `MainWindow` 处理
+  - 发出各种信号，由 `MainWindow` 处理
+  - 通过 `MaterialNameDialog` 获取用户输入的材质球名称和图片尺寸
 
 #### `ui/image_item.py`
 
@@ -106,9 +133,23 @@ VisualizationTexLayout/
   - `mousePressEvent()`, `mouseMoveEvent()`, `mouseReleaseEvent()`: 处理鼠标事件
   - `resize()`, `set_scale()`: 调整贴图大小和缩放
   - `to_dict()`: 将贴图项转换为字典，用于序列化
+  - `set_handle_color()`, `set_handle_size()`: 设置缩放手柄的颜色和大小
+  - `set_border_width()`: 设置边框宽度
+  - `set_snap_to_grid()`: 设置网格吸附
+  - `snap_position()`: 将位置吸附到网格
+- **属性**:
+  - `material_name`: 材质球名称
+  - `filepath`: 贴图文件路径
+  - `width`, `height`: 贴图尺寸
+  - `scale_x`, `scale_y`: 缩放因子
+  - `rotation_angle`: 旋转角度
+  - `visible`: 可见性
+  - `handle_color`: 缩放手柄颜色
+  - `handle_size`: 缩放手柄大小
 - **调用关系**:
   - 由 `MainWindow` 创建
   - 添加到 `CanvasWidget` 的场景中显示
+  - 响应 `ToolPanel` 发出的设置变更信号
 
 ### 3.3 核心功能
 
@@ -146,11 +187,13 @@ VisualizationTexLayout/
 1. 用户点击右侧面板的"添加贴图"按钮
 2. `ToolPanel.on_add_image_clicked()` 打开文件选择对话框
 3. 用户选择图片文件
-4. `ToolPanel` 更新预览图片并发出 `add_image_signal` 信号
-5. `MainWindow.add_image()` 接收信号，创建 `ImageItem` 实例
-6. `MainWindow` 将 `ImageItem` 添加到 `CanvasWidget` 的场景中
-7. `CanvasWidget` 显示贴图
-8. 用户可以拖拽和选择贴图
+4. `ToolPanel` 弹出 `MaterialNameDialog` 对话框，让用户输入材质球名称和设置图片尺寸
+5. 用户确认后，`ToolPanel` 发出 `add_image_signal` 信号，包含文件路径、材质球名称、宽度和高度
+6. `MainWindow.on_add_image()` 接收信号，调用 `add_image()` 方法
+7. `MainWindow.add_image()` 创建 `ImageItem` 实例，设置材质球名称和尺寸
+8. `MainWindow` 将 `ImageItem` 添加到 `CanvasWidget` 的场景中
+9. `CanvasWidget` 显示贴图
+10. 用户可以拖拽和选择贴图
 
 ### 4.3 保存布局流程
 
@@ -182,6 +225,24 @@ VisualizationTexLayout/
 3. `MainWindow` 通过连接的槽函数将设置转发给 `CanvasWidget`
 4. `CanvasWidget` 更新网格属性并重绘视图
 5. 用户看到实时更新的网格效果
+
+### 4.6 导出布局流程
+
+1. 用户在右侧"导出"面板输入PresetID和选择导出路径
+2. 用户点击"导出"按钮
+3. `ToolPanel.on_export_clicked()` 验证输入并发出 `export_signal` 信号
+4. `MainWindow.export_layout_with_preset()` 接收信号，收集所有贴图项的数据
+5. 将布局数据保存为JSON文件，包含PresetID
+6. 更新状态栏显示导出成功信息
+
+### 4.7 细节属性面板更新流程
+
+1. 用户在画布中选择一个或多个贴图
+2. `MainWindow.on_selection_changed()` 被触发
+3. 如果只选中一个贴图，调用 `ToolPanel.update_detail_property()` 更新细节属性面板
+4. 面板显示贴图的名称、文件路径、材质球名称等信息
+5. 用户可以编辑材质球名称，点击复制按钮复制文件路径
+6. 当材质球名称变更时，`ToolPanel.on_material_name_changed()` 更新选中贴图的材质球名称
 
 ## 5. 代码调用流程图
 
@@ -251,6 +312,7 @@ sequenceDiagram
     TP->>Dialog: 打开文件选择对话框
     User->>Dialog: 选择图片文件
     Dialog->>TP: 返回文件路径
+    TP->>TP: 弹出MaterialNameDialog
     TP->>TP: 更新预览图片
     TP->>MW: 发送add_image_signal信号
     MW->>II: 创建ImageItem实例
@@ -322,11 +384,14 @@ sequenceDiagram
 ```mermaid
 graph TD
     subgraph "信号-槽通信"
-        TP_Signal1[ToolPanel: add_image_signal] -->|信号| MW_Slot1[MainWindow: add_image]
+        TP_Signal1[ToolPanel: add_image_signal] -->|信号| MW_Slot1[MainWindow: on_add_image]
         TP_Signal2[ToolPanel: grid_visible_changed] -->|信号| MW_Slot2[MainWindow -> CanvasWidget: set_grid_visible]
         TP_Signal3[ToolPanel: grid_size_changed] -->|信号| MW_Slot3[MainWindow -> CanvasWidget: set_grid_size]
+        TP_Signal4[ToolPanel: export_signal] -->|信号| MW_Slot4[MainWindow: export_layout_with_preset]
         MW_Slot1 -->|调用| II_Create[创建ImageItem]
         II_Create -->|调用| CW_Add[CanvasWidget: add_image]
+        CW_Signal1[CanvasWidget: selection_changed] -->|信号| MW_Slot5[MainWindow: on_selection_changed]
+        MW_Slot5 -->|调用| TP_Update[ToolPanel: update_detail_property]
     end
     
     subgraph "对象关系"
@@ -334,6 +399,7 @@ graph TD
         MW -->|包含| TP[ToolPanel]
         CW -->|包含| Scene[QGraphicsScene]
         Scene -->|包含| II[ImageItem]
+        TP -->|创建| MND[MaterialNameDialog]
     end
     
     subgraph "文件操作"
@@ -346,8 +412,8 @@ graph TD
     classDef object fill:#9cf,stroke:#333,stroke-width:1px;
     classDef file fill:#9f9,stroke:#333,stroke-width:1px;
     
-    class TP_Signal1,TP_Signal2,TP_Signal3,MW_Slot1,MW_Slot2,MW_Slot3 signal;
-    class MW,CW,TP,Scene,II object;
+    class TP_Signal1,TP_Signal2,TP_Signal3,TP_Signal4,CW_Signal1,MW_Slot1,MW_Slot2,MW_Slot3,MW_Slot4,MW_Slot5 signal;
+    class MW,CW,TP,Scene,II,MND object;
     class MW_File,JSON,II_Dict,CW_Grid file;
 ```
 
