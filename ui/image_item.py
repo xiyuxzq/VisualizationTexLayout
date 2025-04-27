@@ -26,7 +26,7 @@ class ImageItem(QGraphicsItem):
         self.name = name or filepath.split("/")[-1]
         self.filepath = filepath
         self.pixmap = QPixmap(filepath)
-        self.material_name = ""  # 新增：材质球名称
+        self.material_name = name  # 将传入的 name 参数赋值给 material_name 属性
         
         # 位置和大小
         self.width = self.pixmap.width()
