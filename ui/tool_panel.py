@@ -564,8 +564,10 @@ class ToolPanel(QWidget):
         clipboard = QApplication.clipboard()
         clipboard.setText(export_path)
         
-        # 显示提示信息
-        self.statusBar().showMessage(f"导出成功！导出路径已复制到剪贴板：{export_path}")
+        # 通过主窗口显示状态栏消息
+        main_window = self.window()
+        if main_window:
+            main_window.statusBar().showMessage(f"导出成功！导出路径已复制到剪贴板：{export_path}")
         
     def update_detail_property(self, image_item):
         """
