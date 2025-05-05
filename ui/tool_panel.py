@@ -544,21 +544,28 @@ class ToolPanel(QWidget):
             
     def on_export_clicked(self):
         """
-        导出按钮点击事件处理
+        处理导出按钮点击事件
         """
         preset_id = self.preset_id_edit.text().strip()
         export_path = self.export_path_edit.text().strip()
         
         if not preset_id:
-            QMessageBox.warning(self, "警告", "请先填写PresetID")
+            QMessageBox.warning(self, "警告", "请输入PresetID")
             return
             
         if not export_path:
             QMessageBox.warning(self, "警告", "请选择导出路径")
             return
             
-        # 发送导出信号
+        # 发出导出信号
         self.export_signal.emit(preset_id, export_path)
+        
+        # 复制导出路径到剪贴板
+        clipboard = QApplication.clipboard()
+        clipboard.setText(export_path)
+        
+        # 显示提示信息
+        self.statusBar().showMessage(f"导出成功！导出路径已复制到剪贴板：{export_path}")
         
     def update_detail_property(self, image_item):
         """
