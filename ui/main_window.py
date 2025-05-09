@@ -21,9 +21,12 @@ class MainWindow(QMainWindow):
     
     def __init__(self):
         super(MainWindow, self).__init__()
+        # 直接设置窗口置顶标志
+        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
         self.init_ui()
         self.current_file = None
         self.init_settings()
+        self.always_on_top = True
         
     def init_ui(self):
         """
@@ -84,6 +87,8 @@ class MainWindow(QMainWindow):
         open_action = QAction("打开", self)
         open_action.setShortcut("Ctrl+O")
         open_action.triggered.connect(self.open_file)
+        # TODO: 打开功能目前存在问题，暂时禁用，后续需要修复
+        open_action.setEnabled(False)
         file_menu.addAction(open_action)
         
         save_action = QAction("保存", self)
@@ -128,6 +133,15 @@ class MainWindow(QMainWindow):
         
         # 设置主题动作组
         self.theme_actions = [light_theme_action, dark_theme_action]
+        
+        edit_menu.addSeparator()
+        
+        # 添加窗口置顶选项
+        always_on_top_action = QAction("窗口置顶", self)
+        always_on_top_action.setCheckable(True)
+        always_on_top_action.setChecked(True)
+        always_on_top_action.triggered.connect(self.toggle_always_on_top)
+        edit_menu.addAction(always_on_top_action)
         
         # 视图菜单
         view_menu = self.menuBar().addMenu("视图")
@@ -201,7 +215,7 @@ class MainWindow(QMainWindow):
         self.tool_panel.border_width_changed.connect(self.canvas.set_border_width)
         self.tool_panel.handle_color_changed.connect(self.canvas.set_handle_color)
         self.tool_panel.handle_size_changed.connect(self.canvas.set_handle_size)
-        self.tool_panel.export_signal.connect(self.export_layout_with_preset)
+        self.tool_panel.export_signal.connect(self.export_layout_with_lod)
         
         # 画布信号
         self.canvas.scene.selectionChanged.connect(self.on_selection_changed)
@@ -486,6 +500,11 @@ class MainWindow(QMainWindow):
     def open_file(self):
         """
         打开文件
+        
+        TODO: 打开功能目前存在以下问题需要修复：
+        1. 图片加载后缩放比例不正确
+        2. 图片位置与保存时的不一致
+        3. 可能存在其他图像属性丢失的问题
         """
         file_dialog = QFileDialog()
         file_path, _ = file_dialog.getOpenFileName(
@@ -520,15 +539,11 @@ class MainWindow(QMainWindow):
                         material_name = img_data.get("material_name", "")
                         
                         if os.path.exists(filepath):
-                            # 获取贴图尺寸
-                            size = img_data.get("size", {})
-                            width = size.get("width", 0)
-                            height = size.get("height", 0)
-                            
                             # 创建贴图项
-                            image_item = self.add_image(filepath, material_name, width, height)
+                            image_item = self.add_image(filepath, material_name)
                             
                             if image_item:
+                                
                                 # 设置位置
                                 pos = img_data.get("position", {})
                                 x_percent = pos.get("x", 0)
@@ -539,17 +554,27 @@ class MainWindow(QMainWindow):
                                 y = y_percent * self.canvas.scene.height()
                                 image_item.setPos(x, y)
                                 
-                                # 设置旋转
-                                rotation = img_data.get("rotation", 0)
-                                image_item.setRotation(rotation)
+                                # 设置缩放
+                                # 缩放比例是图片original_size/size
+                                original_size = img_data.get("original_size", {})
+                                size = img_data.get("size", {})
                                 
-                                # 设置层级
-                                z_index = img_data.get("zIndex", 0)
-                                image_item.setZValue(z_index)
+                                original_width = original_size.get("width", 0)
+                                original_height = original_size.get("height", 0)
+                                actual_width = size.get("width", 0)
+                                actual_height = size.get("height", 0)
                                 
-                                # 设置可见性
-                                visible = img_data.get("visible", True)
-                                image_item.setVisible(visible)
+                                # 计算缩放比例
+                                if original_width > 0 and original_height > 0:
+                                    scale_x = actual_width / original_width
+                                    scale_y = actual_height / original_height
+                                else:
+                                    # 如果没有原始尺寸信息，使用scale字段
+                                    scale = img_data.get("scale", {})
+                                    scale_x = scale.get("x", 1.0)
+                                    scale_y = scale.get("y", 1.0)
+                                
+                                image_item.set_scale(scale_x, scale_y)
                 
                 self.current_file = file_path
                 self.status_bar.showMessage(f"已打开文件: {file_path}")
@@ -676,14 +701,14 @@ class MainWindow(QMainWindow):
         else:
             self.tool_panel.update_detail_property(None)
             
-    def export_layout_with_preset(self, preset_id, export_path):
+    def export_layout_with_lod(self, lod, export_path):
         """
-        使用PresetID导出布局数据
+        使用Lod导出布局数据
         """
         try:
             layout_data = {
                 "version": "1.0",
-                "preset_id": preset_id,
+                "lod": int(lod),
                 "canvas": {
                     "width": self.canvas.scene.width(),
                     "height": self.canvas.scene.height()
@@ -722,3 +747,23 @@ class MainWindow(QMainWindow):
             
         # 更新状态栏
         self.status_bar.showMessage(f"当前共有 {len(image_items)} 个贴图")
+
+    def toggle_always_on_top(self):
+        """
+        切换窗口置顶状态
+        """
+        self.always_on_top = not self.always_on_top
+        # 保存当前窗口位置和大小
+        geometry = self.geometry()
+        
+        if self.always_on_top:
+            self.setWindowFlags(Qt.Window | Qt.WindowStaysOnTopHint)
+        else:
+            self.setWindowFlags(Qt.Window)
+            
+        # 恢复位置和大小
+        self.setGeometry(geometry)
+        # 重新显示窗口并激活
+        self.show()
+        self.activateWindow()
+        self.raise_()

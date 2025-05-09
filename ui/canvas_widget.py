@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
-from PyQt5.QtCore import Qt, QRectF, QPointF, QLineF
-from PyQt5.QtGui import QPainter, QColor, QPen
+from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsItem
+from PyQt5.QtCore import Qt, QRectF, QPointF, QLineF, QSizeF
+from PyQt5.QtGui import QPainter, QColor, QPen, QBrush, QTransform
 import math
+
+from ui.image_item import ImageItem  # 添加ImageItem的导入
 
 class CanvasWidget(QGraphicsView):
     """

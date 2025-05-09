@@ -29,7 +29,7 @@ class ToolPanel(QWidget):
     border_width_changed = pyqtSignal(int)    # 边界线宽度变更信号
     handle_color_changed = pyqtSignal(QColor)  # 新增：缩放手柄颜色变更信号
     handle_size_changed = pyqtSignal(int)      # 新增：缩放手柄大小变更信号
-    export_signal = pyqtSignal(str, str)  # 导出信号，参数为PresetID和导出路径
+    export_signal = pyqtSignal(str, str)  # 导出信号，参数为Lod和导出路径
     
     def __init__(self, parent=None):
         super(ToolPanel, self).__init__(parent)
@@ -78,6 +78,9 @@ class ToolPanel(QWidget):
         op_layout = QGridLayout()
         self.new_btn = QPushButton("新建")
         self.open_btn = QPushButton("打开")
+        # TODO: 打开功能目前存在问题，暂时禁用，后续需要修复
+        self.open_btn.setEnabled(False)
+        self.open_btn.setToolTip("该功能暂不可用，将在后续版本中修复")
         self.zoom_in_btn = QPushButton("放大选中图片")
         self.zoom_out_btn = QPushButton("缩小选中图片")
         self.fit_view_btn = QPushButton("适应视图")
@@ -310,18 +313,19 @@ class ToolPanel(QWidget):
         """
         layout = QVBoxLayout(self.export_tab)
         
-        # PresetID设置组
-        preset_group = QGroupBox("PresetID设置")
-        preset_layout = QGridLayout()
+        # Lod设置组
+        lod_group = QGroupBox("Lod设置")
+        lod_layout = QGridLayout()
         
-        # PresetID输入
-        preset_layout.addWidget(QLabel("PresetID:"), 0, 0)
-        self.preset_id_edit = QLineEdit()
-        self.preset_id_edit.setPlaceholderText("请输入PresetID")
-        preset_layout.addWidget(self.preset_id_edit, 0, 1)
+        # Lod输入
+        lod_layout.addWidget(QLabel("Lod:"), 0, 0)
+        self.lod_edit = QSpinBox()
+        self.lod_edit.setRange(-1, 5)  # 设置Lod范围为0-5
+        self.lod_edit.setValue(0)  # 默认值为0
+        lod_layout.addWidget(self.lod_edit, 0, 1)
         
-        preset_group.setLayout(preset_layout)
-        layout.addWidget(preset_group)
+        lod_group.setLayout(lod_layout)
+        layout.addWidget(lod_group)
         
         # 导出路径设置组
         path_group = QGroupBox("导出路径设置")
@@ -546,19 +550,15 @@ class ToolPanel(QWidget):
         """
         处理导出按钮点击事件
         """
-        preset_id = self.preset_id_edit.text().strip()
+        lod = self.lod_edit.value()
         export_path = self.export_path_edit.text().strip()
         
-        if not preset_id:
-            QMessageBox.warning(self, "警告", "请输入PresetID")
-            return
-            
         if not export_path:
             QMessageBox.warning(self, "警告", "请选择导出路径")
             return
             
         # 发出导出信号
-        self.export_signal.emit(preset_id, export_path)
+        self.export_signal.emit(str(lod), export_path)
         
         # 复制导出路径到剪贴板
         clipboard = QApplication.clipboard()
