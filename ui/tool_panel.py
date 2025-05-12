@@ -610,6 +610,7 @@ class ToolPanel(QWidget):
             mesh_index = getattr(image_item, "mesh_index", 0)
             self.mesh_index_spin.setValue(mesh_index)
             self.mesh_index_spin.setEnabled(True)  # 启用编辑
+            
         else:
             self.name_label.setText("未选择贴图")
             self.path_label.setText("未选择贴图")
@@ -692,7 +693,7 @@ class ToolPanel(QWidget):
         if len(selected_items) == 1:
             # 更新Mesh索引
             selected_items[0].mesh_index = value
-            
+
 class MaterialNameDialog(QDialog):
     """
     材质球名称输入对话框

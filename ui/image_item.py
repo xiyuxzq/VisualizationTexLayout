@@ -269,29 +269,57 @@ class ImageItem(QGraphicsItem):
         
     def to_dict(self):
         """
-        将贴图项转换为字典，用于保存和导出
+        将贴图项转换为字典，用于序列化
         """
+        # 获取场景大小
+        scene = self.scene()
+        if scene:
+            scene_width = scene.width()
+            scene_height = scene.height()
+            # 计算位置百分比
+            pos_x_percent = self.pos().x() / scene_width
+            pos_y_percent = self.pos().y() / scene_height
+        else:
+            # 如果无法获取场景大小，使用默认值
+            pos_x_percent = 0
+            pos_y_percent = 0
+            
+        # 计算实际显示尺寸（考虑缩放）
+        actual_width = self.width * self.scale_x
+        actual_height = self.height * self.scale_y
+        
+        # 计算相对于用户设置初始尺寸的缩放比例
+        if self.initial_width > 0 and self.initial_height > 0:
+            relative_scale_x = actual_width / self.initial_width
+            relative_scale_y = actual_height / self.initial_height
+        else:
+            relative_scale_x = 1.0
+            relative_scale_y = 1.0
+            
         return {
-            "id": self.id,
+            "id": str(self.id),
             "name": self.name,
             "filepath": self.filepath,
+            "mesh_index": self.mesh_index,
             "material_name": self.material_name,
-            "mesh_index": self.mesh_index,  # 添加mesh_index到导出数据
             "position": {
-                "x": self.pos().x(),
-                "y": self.pos().y()
+                "x": pos_x_percent,
+                "y": pos_y_percent
             },
             "size": {
+                "width": actual_width,
+                "height": actual_height
+            },
+            "original_size": {
                 "width": self.width,
-                "height": self.height,
-                "initial_width": self.initial_width,
-                "initial_height": self.initial_height
+                "height": self.height
             },
             "scale": {
-                "x": self.scale_x,
-                "y": self.scale_y
+                "x": relative_scale_x,
+                "y": relative_scale_y
             },
             "rotation": self.rotation_angle,
+            "zIndex": self.zValue(),
             "visible": self.visible
         }
 

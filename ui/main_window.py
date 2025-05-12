@@ -453,19 +453,17 @@ class MainWindow(QMainWindow):
         
         event.accept()
     
-    def add_image(self, filepath, material_name, width=None, height=None, mesh_index=0):
+    def add_image(self, filepath, material_name, width=None, height=None):
         """
         添加图片到画布
         :param filepath: 图片文件路径
         :param material_name: 材质球名称
         :param width: 图片宽度，如果为None则使用原始宽度
         :param height: 图片高度，如果为None则使用原始高度
-        :param mesh_index: Mesh索引，默认为0
         """
         try:
             # 创建图片项
             image_item = ImageItem(filepath, material_name)
-            image_item.mesh_index = mesh_index  # 设置mesh索引
             
             # 如果指定了大小，则调整图片大小
             if width is not None and height is not None:
@@ -482,9 +480,13 @@ class MainWindow(QMainWindow):
             
     def on_add_image(self, filepath, material_name, width, height, mesh_index):
         """
-        处理添加图片信号
+        处理添加贴图信号
         """
-        self.add_image(filepath, material_name, width, height, mesh_index)
+        image_item = ImageItem(filepath, material_name)
+        image_item.mesh_index = mesh_index  # 设置mesh_index
+        if width > 0 and height > 0:
+            image_item.resize(width, height)
+        self.canvas.add_image_item(image_item)
     
     def new_file(self):
         """
