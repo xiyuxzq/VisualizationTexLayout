@@ -78,9 +78,6 @@ class ToolPanel(QWidget):
         op_layout = QGridLayout()
         self.new_btn = QPushButton("新建")
         self.open_btn = QPushButton("打开")
-        # TODO: 打开功能目前存在问题，暂时禁用，后续需要修复
-        self.open_btn.setEnabled(False)
-        self.open_btn.setToolTip("该功能暂不可用，将在后续版本中修复")
         self.zoom_in_btn = QPushButton("放大选中图片")
         self.zoom_out_btn = QPushButton("缩小选中图片")
         self.fit_view_btn = QPushButton("适应视图")
@@ -403,10 +400,12 @@ class ToolPanel(QWidget):
         if filepath:
             dialog = MaterialNameDialog(self, filepath)
             if dialog.exec_() == QDialog.Accepted:
-                material_name = dialog.get_material_name()
+                # 使用文件名作为默认材质球名称
+                filename = os.path.basename(filepath)
+                name_without_ext = os.path.splitext(filename)[0]
                 width, height = dialog.get_resize_dimensions()
-                mesh_index = dialog.get_mesh_index()
-                self.add_image_signal.emit(filepath, material_name, width, height, mesh_index)
+                # 使用默认的mesh_index=0
+                self.add_image_signal.emit(filepath, name_without_ext, width, height, 0)
     
     def on_grid_visible_changed(self, state):
         """
@@ -605,18 +604,21 @@ class ToolPanel(QWidget):
             material_name = getattr(image_item, "material_name", "")
             self.material_edit.setText(material_name)
             self.material_edit.setEnabled(True)  # 启用编辑
+            self.material_edit.setPlaceholderText("请输入材质球名称")  # 添加提示文本
 
             # 设置Mesh索引
             mesh_index = getattr(image_item, "mesh_index", 0)
             self.mesh_index_spin.setValue(mesh_index)
             self.mesh_index_spin.setEnabled(True)  # 启用编辑
+            self.mesh_index_spin.setToolTip("请输入Mesh索引(0-999)")  # 添加提示文本
             
         else:
             self.name_label.setText("未选择贴图")
             self.path_label.setText("未选择贴图")
             self.path_label.setToolTip("")
             self.copy_path_btn.setEnabled(False)  # 禁用复制按钮
-            self.material_edit.setText("")
+            self.material_edit.clear()
+            self.material_edit.setPlaceholderText("请先选择贴图")  # 更新提示文本
             self.material_edit.setEnabled(False)  # 禁用编辑
             self.mesh_index_spin.setValue(0)
             self.mesh_index_spin.setEnabled(False)  # 禁用编辑
@@ -696,13 +698,11 @@ class ToolPanel(QWidget):
 
 class MaterialNameDialog(QDialog):
     """
-    材质球名称输入对话框
+    图片大小设置对话框
     """
     def __init__(self, parent=None, filepath=""):
         super(MaterialNameDialog, self).__init__(parent)
         self.filepath = filepath
-        self.material_name = ""
-        self.mesh_index = 0
         self.resize_width = 0
         self.resize_height = 0
         self.original_width = 0
@@ -713,7 +713,7 @@ class MaterialNameDialog(QDialog):
         """
         初始化界面
         """
-        self.setWindowTitle("输入材质球名称")
+        self.setWindowTitle("图片大小设置")
         self.setMinimumWidth(400)
         
         layout = QVBoxLayout(self)
@@ -727,28 +727,6 @@ class MaterialNameDialog(QDialog):
             file_label.setWordWrap(True)
             file_layout.addWidget(file_label)
             layout.addLayout(file_layout)
-        
-        # 材质球名称和Mesh索引输入
-        form_layout = QFormLayout()
-        
-        # 材质球名称输入
-        self.material_edit = QLineEdit()
-        self.material_edit.setPlaceholderText("请输入材质球名称")
-        # 尝试从文件名生成默认材质球名称
-        if self.filepath:
-            filename = os.path.basename(self.filepath)
-            name_without_ext = os.path.splitext(filename)[0]
-            self.material_edit.setText(name_without_ext)
-        form_layout.addRow("材质球名称:", self.material_edit)
-        
-        # Mesh索引输入
-        self.mesh_index_spin = QSpinBox()
-        self.mesh_index_spin.setRange(0, 999)  # 设置合理的范围
-        self.mesh_index_spin.setValue(0)
-        self.mesh_index_spin.setToolTip("请输入Mesh索引(0-999)")
-        form_layout.addRow("Mesh索引:", self.mesh_index_spin)
-        
-        layout.addLayout(form_layout)
         
         # 图片大小设置
         size_group = QGroupBox("图片大小设置")
@@ -845,37 +823,19 @@ class MaterialNameDialog(QDialog):
         if checked:
             self.on_width_changed(self.width_edit.value())
         
-    def get_material_name(self):
-        """
-        获取输入的材质球名称
-        """
-        return self.material_edit.text().strip()
-        
-    def get_mesh_index(self):
-        """
-        获取输入的mesh索引
-        """
-        return self.mesh_index_spin.value()
-        
     def get_resize_dimensions(self):
         """
         获取调整后的图片尺寸
+        如果未启用调整大小，则返回原始尺寸
         """
         if self.width_edit.isEnabled():
             return self.width_edit.value(), self.height_edit.value()
-        return 0, 0
+        return self.original_width, self.original_height
         
     def accept(self):
         """
         确认按钮点击事件处理
         """
-        self.material_name = self.get_material_name()
-        if not self.material_name:
-            QMessageBox.warning(self, "警告", "请输入材质球名称")
-            return
-            
-        # 获取调整后的尺寸和mesh索引
+        # 获取调整后的尺寸
         self.resize_width, self.resize_height = self.get_resize_dimensions()
-        self.mesh_index = self.get_mesh_index()
-            
         super(MaterialNameDialog, self).accept()

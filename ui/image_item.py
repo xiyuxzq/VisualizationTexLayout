@@ -4,6 +4,7 @@
 from PyQt5.QtWidgets import QGraphicsItem
 from PyQt5.QtCore import Qt, QRectF, QPointF
 from PyQt5.QtGui import QPixmap, QPainter, QPen, QColor, QBrush
+import os
 
 class ImageItem(QGraphicsItem):
     """
@@ -26,7 +27,7 @@ class ImageItem(QGraphicsItem):
         self.name = name or filepath.split("/")[-1]
         self.filepath = filepath
         self.pixmap = QPixmap(filepath)
-        self.material_name = name  # 将传入的 name 参数赋值给 material_name 属性
+        self.material_name = name or os.path.splitext(os.path.basename(filepath))[0]  # 使用不带扩展名的文件名作为默认值
         self.mesh_index = 0  # 添加mesh_index属性，默认为0
         
         # 位置和大小

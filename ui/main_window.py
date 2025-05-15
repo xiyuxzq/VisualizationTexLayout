@@ -87,8 +87,6 @@ class MainWindow(QMainWindow):
         open_action = QAction("打开", self)
         open_action.setShortcut("Ctrl+O")
         open_action.triggered.connect(self.open_file)
-        # TODO: 打开功能目前存在问题，暂时禁用，后续需要修复
-        open_action.setEnabled(False)
         file_menu.addAction(open_action)
         
         save_action = QAction("保存", self)
@@ -204,7 +202,7 @@ class MainWindow(QMainWindow):
         连接信号和槽
         """
         # 工具面板信号
-        self.tool_panel.add_image_signal.connect(self.add_image)
+        self.tool_panel.add_image_signal.connect(self.on_add_image)
         self.tool_panel.grid_visible_changed.connect(self.canvas.set_grid_visible)
         self.tool_panel.grid_size_changed.connect(self.canvas.set_grid_size)
         self.tool_panel.canvas_size_changed.connect(self.set_canvas_size)
@@ -453,17 +451,19 @@ class MainWindow(QMainWindow):
         
         event.accept()
     
-    def add_image(self, filepath, material_name, width=None, height=None):
+    def add_image(self, filepath, material_name, width=None, height=None, mesh_index=0):
         """
         添加图片到画布
         :param filepath: 图片文件路径
         :param material_name: 材质球名称
         :param width: 图片宽度，如果为None则使用原始宽度
         :param height: 图片高度，如果为None则使用原始高度
+        :param mesh_index: Mesh索引，默认为0
         """
         try:
             # 创建图片项
             image_item = ImageItem(filepath, material_name)
+            image_item.mesh_index = mesh_index  # 设置mesh_index
             
             # 如果指定了大小，则调整图片大小
             if width is not None and height is not None:
@@ -475,9 +475,12 @@ class MainWindow(QMainWindow):
             # 更新材质球列表
             self.update_material_list()
             
+            return image_item
+            
         except Exception as e:
             QMessageBox.critical(self, "错误", f"添加图片失败：{str(e)}")
-            
+            return None
+
     def on_add_image(self, filepath, material_name, width, height, mesh_index):
         """
         处理添加贴图信号
@@ -486,7 +489,9 @@ class MainWindow(QMainWindow):
         image_item.mesh_index = mesh_index  # 设置mesh_index
         if width > 0 and height > 0:
             image_item.resize(width, height)
-        self.canvas.add_image_item(image_item)
+        self.canvas.add_image(image_item)
+        # 更新材质球列表
+        self.update_material_list()
     
     def new_file(self):
         """
@@ -504,89 +509,73 @@ class MainWindow(QMainWindow):
     def open_file(self):
         """
         打开文件
-        
-        TODO: 打开功能目前存在以下问题需要修复：
-        1. 图片加载后缩放比例不正确
-        2. 图片位置与保存时的不一致
-        3. 可能存在其他图像属性丢失的问题
         """
         file_dialog = QFileDialog()
         file_path, _ = file_dialog.getOpenFileName(
             self, "打开布局", "", "布局文件 (*.json)"
         )
         
-        if file_path:
-            try:
-                with open(file_path, 'r') as f:
-                    layout_data = json.load(f)
+        if not file_path:
+            return
+            
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                layout_data = json.load(f)
                 
-                # 清空当前画布
-                self.canvas.clear_scene()
+            # 设置画布大小
+            if "canvas_size" in layout_data:
+                width = layout_data["canvas_size"].get("width", 1024)
+                height = layout_data["canvas_size"].get("height", 1024)
+                self.canvas.set_canvas_size(width, height)
+                self.tool_panel.set_canvas_size(width, height)
                 
-                # 设置画布大小
-                if "canvas" in layout_data:
-                    width = int(layout_data["canvas"].get("width", 1024))
-                    height = int(layout_data["canvas"].get("height", 1024))
-                    self.canvas.set_canvas_size(width, height)
-                    self.tool_panel.set_canvas_size(width, height)
-                
-                # 设置网格属性
-                if "grid" in layout_data:
-                    grid_settings = layout_data["grid"]
-                    self.canvas.set_grid_settings(grid_settings)
-                    self.tool_panel.set_grid_settings(grid_settings)
-                
-                # 加载贴图
-                if "images" in layout_data:
-                    for img_data in layout_data["images"]:
-                        filepath = img_data.get("filepath", "")
-                        material_name = img_data.get("material_name", "")
+            # 加载贴图
+            if "images" in layout_data:
+                for img_data in layout_data["images"]:
+                    filepath = img_data.get("filepath", "")
+                    material_name = img_data.get("material_name", "")
+                    mesh_index = img_data.get("mesh_index", 0)  # 获取mesh_index
+                    
+                    if os.path.exists(filepath):
+                        # 获取贴图尺寸
+                        size = img_data.get("size", {})
+                        width = size.get("width", 0)
+                        height = size.get("height", 0)
                         
-                        if os.path.exists(filepath):
-                            # 创建贴图项
-                            image_item = self.add_image(filepath, material_name)
+                        # 创建贴图项
+                        image_item = self.add_image(filepath, material_name, width, height, mesh_index)
+                        
+                        if image_item:
+                            # 设置位置
+                            pos = img_data.get("position", {})
+                            x_percent = pos.get("x", 0)
+                            y_percent = pos.get("y", 0)
                             
-                            if image_item:
-                                
-                                # 设置位置
-                                pos = img_data.get("position", {})
-                                x_percent = pos.get("x", 0)
-                                y_percent = pos.get("y", 0)
-                                
-                                # 将百分比转换为像素
-                                x = x_percent * self.canvas.scene.width()
-                                y = y_percent * self.canvas.scene.height()
-                                image_item.setPos(x, y)
-                                
-                                # 设置缩放
-                                # 缩放比例是图片original_size/size
-                                original_size = img_data.get("original_size", {})
-                                size = img_data.get("size", {})
-                                
-                                original_width = original_size.get("width", 0)
-                                original_height = original_size.get("height", 0)
-                                actual_width = size.get("width", 0)
-                                actual_height = size.get("height", 0)
-                                
-                                # 计算缩放比例
-                                if original_width > 0 and original_height > 0:
-                                    scale_x = actual_width / original_width
-                                    scale_y = actual_height / original_height
-                                else:
-                                    # 如果没有原始尺寸信息，使用scale字段
-                                    scale = img_data.get("scale", {})
-                                    scale_x = scale.get("x", 1.0)
-                                    scale_y = scale.get("y", 1.0)
-                                
-                                image_item.set_scale(scale_x, scale_y)
-                
-                self.current_file = file_path
-                self.status_bar.showMessage(f"已打开文件: {file_path}")
-                
-            except Exception as e:
-                import traceback
-                tb = traceback.format_exc()
-                QMessageBox.critical(self, "错误", f"打开文件失败: {str(e)}\n\n{tb}")
+                            # 将百分比转换为像素
+                            x = x_percent * self.canvas.scene.width()
+                            y = y_percent * self.canvas.scene.height()
+                            image_item.setPos(x, y)
+                            
+                            # 设置旋转
+                            rotation = img_data.get("rotation", 0)
+                            image_item.setRotation(rotation)
+                            
+                            # 设置层级
+                            z_index = img_data.get("zIndex", 0)
+                            image_item.setZValue(z_index)
+                            
+                            # 设置可见性
+                            visible = img_data.get("visible", True)
+                            image_item.setVisible(visible)
+                    else:
+                        QMessageBox.warning(self, "警告", f"文件不存在：{filepath}")
+                        
+            # 更新当前文件路径
+            self.current_file = file_path
+            self.status_bar.showMessage(f"已打开文件：{file_path}")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "错误", f"打开文件失败：{str(e)}")
     
     def save_file(self):
         """
