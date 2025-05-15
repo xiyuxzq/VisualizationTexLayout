@@ -534,26 +534,37 @@ class MainWindow(QMainWindow):
                 for img_data in layout_data["images"]:
                     filepath = img_data.get("filepath", "")
                     material_name = img_data.get("material_name", "")
-                    mesh_index = img_data.get("mesh_index", 0)  # 获取mesh_index
+                    mesh_index = img_data.get("mesh_index", 0)
                     
                     if os.path.exists(filepath):
-                        # 获取贴图尺寸
-                        size = img_data.get("size", {})
-                        width = size.get("width", 0)
-                        height = size.get("height", 0)
-                        
                         # 创建贴图项
-                        image_item = self.add_image(filepath, material_name, width, height, mesh_index)
+                        image_item = self.add_image(filepath, material_name, None, None, mesh_index)
                         
                         if image_item:
+                            # 获取画布尺寸
+                            canvas_width = self.canvas.scene.width()
+                            canvas_height = self.canvas.scene.height()
+                            
+                            # 获取缩放比例
+                            scale = img_data.get("scale", {})
+                            scale_x = scale.get("x", 1.0)
+                            scale_y = scale.get("y", 1.0)
+                            
+                            # 计算实际尺寸
+                            target_width = int(canvas_width * scale_x)
+                            target_height = int(canvas_height * scale_y)
+                            
+                            # 调整图片大小
+                            image_item.resize(target_width, target_height)
+                            
                             # 设置位置
                             pos = img_data.get("position", {})
                             x_percent = pos.get("x", 0)
                             y_percent = pos.get("y", 0)
                             
-                            # 将百分比转换为像素
-                            x = x_percent * self.canvas.scene.width()
-                            y = y_percent * self.canvas.scene.height()
+                            # 将百分比转换为像素坐标
+                            x = x_percent * canvas_width
+                            y = y_percent * canvas_height
                             image_item.setPos(x, y)
                             
                             # 设置旋转

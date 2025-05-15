@@ -270,54 +270,40 @@ class ImageItem(QGraphicsItem):
         
     def to_dict(self):
         """
-        将贴图项转换为字典，用于序列化
+        将图片项转换为字典数据
         """
-        # 获取场景大小
+        # 获取场景（画布）大小
         scene = self.scene()
-        if scene:
-            scene_width = scene.width()
-            scene_height = scene.height()
-            # 计算位置百分比
-            pos_x_percent = self.pos().x() / scene_width
-            pos_y_percent = self.pos().y() / scene_height
-        else:
-            # 如果无法获取场景大小，使用默认值
-            pos_x_percent = 0
-            pos_y_percent = 0
+        if not scene:
+            return {}
             
-        # 计算实际显示尺寸（考虑缩放）
-        actual_width = self.width * self.scale_x
-        actual_height = self.height * self.scale_y
+        scene_width = scene.width()
+        scene_height = scene.height()
         
-        # 计算相对于用户设置初始尺寸的缩放比例
-        if self.initial_width > 0 and self.initial_height > 0:
-            relative_scale_x = actual_width / self.initial_width
-            relative_scale_y = actual_height / self.initial_height
-        else:
-            relative_scale_x = 1.0
-            relative_scale_y = 1.0
-            
+        # 获取图片当前的实际尺寸（不包含手柄区域）
+        current_width = self.width * self.scale_x
+        current_height = self.height * self.scale_y
+        
+        # 计算最终尺寸相对于画布的占比
+        scale_x = current_width / scene_width
+        scale_y = current_height / scene_height
+        
+        # 获取图片在画布中的位置（百分比）
+        pos = self.pos()
+        x_percent = pos.x() / scene_width
+        y_percent = pos.y() / scene_height
+        
         return {
-            "id": str(self.id),
-            "name": self.name,
             "filepath": self.filepath,
-            "mesh_index": self.mesh_index,
             "material_name": self.material_name,
+            "mesh_index": self.mesh_index,
             "position": {
-                "x": pos_x_percent,
-                "y": pos_y_percent
-            },
-            "size": {
-                "width": actual_width,
-                "height": actual_height
-            },
-            "original_size": {
-                "width": self.width,
-                "height": self.height
+                "x": x_percent,
+                "y": y_percent
             },
             "scale": {
-                "x": relative_scale_x,
-                "y": relative_scale_y
+                "x": scale_x,
+                "y": scale_y
             },
             "rotation": self.rotation_angle,
             "zIndex": self.zValue(),
