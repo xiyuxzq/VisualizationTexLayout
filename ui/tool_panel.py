@@ -424,8 +424,8 @@ class ToolPanel(QWidget):
         # Lod输入
         lod_layout.addWidget(QLabel("Lod:"), 0, 0)
         self.lod_edit = QSpinBox()
-        self.lod_edit.setRange(-1, 5)  # 设置Lod范围为0-5
-        self.lod_edit.setValue(0)  # 默认值为0
+        self.lod_edit.setRange(-1, 5)  # 设置Lod范围为-1-5
+        self.lod_edit.setValue(-1)  # 默认值为-1
         lod_layout.addWidget(self.lod_edit, 0, 1)
         
         lod_group.setLayout(lod_layout)
