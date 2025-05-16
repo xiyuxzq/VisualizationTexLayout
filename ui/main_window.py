@@ -116,24 +116,6 @@ class MainWindow(QMainWindow):
         # 编辑菜单
         edit_menu = self.menuBar().addMenu("编辑")
         
-        # 主题切换
-        theme_menu = edit_menu.addMenu("主题")
-        
-        light_theme_action = QAction("浅色主题", self)
-        light_theme_action.setCheckable(True)
-        light_theme_action.triggered.connect(lambda: self.switch_theme("light"))
-        theme_menu.addAction(light_theme_action)
-        
-        dark_theme_action = QAction("深色主题", self)
-        dark_theme_action.setCheckable(True)
-        dark_theme_action.triggered.connect(lambda: self.switch_theme("dark"))
-        theme_menu.addAction(dark_theme_action)
-        
-        # 设置主题动作组
-        self.theme_actions = [light_theme_action, dark_theme_action]
-        
-        edit_menu.addSeparator()
-        
         # 添加窗口置顶选项
         always_on_top_action = QAction("窗口置顶", self)
         always_on_top_action.setCheckable(True)
@@ -310,125 +292,62 @@ class MainWindow(QMainWindow):
             theme = self.settings.value("theme/current", type=str)
             self.switch_theme(theme)
         else:
-            # 默认使用浅色主题
-            self.switch_theme("light")
+            # 默认使用深色主题
+            self.switch_theme("dark")
 
     def switch_theme(self, theme):
         """
-        切换主题
+        只保留深色主题
         """
-        if theme == "light":
-            # 浅色主题
-            self.setStyleSheet("""
-                QMainWindow {
-                    background-color: #f0f0f0;
-                }
-                QMenuBar {
-                    background-color: #f0f0f0;
-                    color: #000000;
-                }
-                QMenuBar::item:selected {
-                    background-color: #e0e0e0;
-                }
-                QMenu {
-                    background-color: #f0f0f0;
-                    color: #000000;
-                }
-                QMenu::item:selected {
-                    background-color: #e0e0e0;
-                }
-                QWidget {
-                    background-color: #f0f0f0;
-                    color: #000000;
-                }
-                QGroupBox {
-                    border: 1px solid #c0c0c0;
-                    border-radius: 5px;
-                    margin-top: 1ex;
-                    font-weight: bold;
-                }
-                QGroupBox::title {
-                    subcontrol-origin: margin;
-                    left: 10px;
-                    padding: 0 3px 0 3px;
-                }
-                QPushButton {
-                    background-color: #e0e0e0;
-                    border: 1px solid #c0c0c0;
-                    border-radius: 3px;
-                    padding: 5px;
-                }
-                QPushButton:hover {
-                    background-color: #d0d0d0;
-                }
-                QPushButton:pressed {
-                    background-color: #c0c0c0;
-                }
-            """)
-            # 设置画布背景颜色
-            self.canvas.setBackgroundBrush(QColor(240, 240, 240))
-            # 更新菜单项选中状态
-            self.theme_actions[0].setChecked(True)
-            self.theme_actions[1].setChecked(False)
-        else:
-            # 深色主题
-            self.setStyleSheet("""
-                QMainWindow {
-                    background-color: #2d2d2d;
-                }
-                QMenuBar {
-                    background-color: #2d2d2d;
-                    color: #ffffff;
-                }
-                QMenuBar::item:selected {
-                    background-color: #3d3d3d;
-                }
-                QMenu {
-                    background-color: #2d2d2d;
-                    color: #ffffff;
-                }
-                QMenu::item:selected {
-                    background-color: #3d3d3d;
-                }
-                QWidget {
-                    background-color: #2d2d2d;
-                    color: #ffffff;
-                }
-                QGroupBox {
-                    border: 1px solid #3d3d3d;
-                    border-radius: 5px;
-                    margin-top: 1ex;
-                    font-weight: bold;
-                }
-                QGroupBox::title {
-                    subcontrol-origin: margin;
-                    left: 10px;
-                    padding: 0 3px 0 3px;
-                }
-                QPushButton {
-                    background-color: #3d3d3d;
-                    border: 1px solid #4d4d4d;
-                    border-radius: 3px;
-                    padding: 5px;
-                }
-                QPushButton:hover {
-                    background-color: #4d4d4d;
-                }
-                QPushButton:pressed {
-                    background-color: #5d5d5d;
-                }
-            """)
-            # 设置画布背景颜色
-            self.canvas.setBackgroundBrush(QColor(45, 45, 45))
-            # 更新菜单项选中状态
-            self.theme_actions[0].setChecked(False)
-            self.theme_actions[1].setChecked(True)
-            
-        # 保存主题设置
-        self.settings.setValue("theme/current", theme)
-        
-        # 更新状态栏
-        self.status_bar.showMessage(f"已切换到{theme}主题")
+        self.setStyleSheet("""
+            QMainWindow {
+                background-color: #2d2d2d;
+            }
+            QMenuBar {
+                background-color: #2d2d2d;
+                color: #ffffff;
+            }
+            QMenuBar::item:selected {
+                background-color: #3d3d3d;
+            }
+            QMenu {
+                background-color: #2d2d2d;
+                color: #ffffff;
+            }
+            QMenu::item:selected {
+                background-color: #3d3d3d;
+            }
+            QWidget {
+                background-color: #2d2d2d;
+                color: #ffffff;
+            }
+            QGroupBox {
+                border: 1px solid #3d3d3d;
+                border-radius: 5px;
+                margin-top: 1ex;
+                font-weight: bold;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 3px 0 3px;
+            }
+            QPushButton {
+                background-color: #3d3d3d;
+                border: 1px solid #4d4d4d;
+                border-radius: 3px;
+                padding: 5px;
+            }
+            QPushButton:hover {
+                background-color: #4d4d4d;
+            }
+            QPushButton:pressed {
+                background-color: #5d5d5d;
+            }
+        """)
+        self.canvas.setBackgroundBrush(QColor(45, 45, 45))
+        # 状态栏提示
+        self.status_bar.showMessage(f"已切换到深色主题")
 
     def closeEvent(self, event):
         """
@@ -666,7 +585,7 @@ class MainWindow(QMainWindow):
             "关于贴图可视化布局工具",
             "贴图可视化布局工具 v1.0\n\n"
             "一个用于可视化调整贴图布局并生成合并数据的工具。\n\n"
-            "© 2023 VisualizationTexLayout"
+            "© 2025 VisualizationTexLayout"
         )
 
     def set_canvas_size(self, width, height):

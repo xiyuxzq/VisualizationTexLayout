@@ -35,11 +35,104 @@ class ToolPanel(QWidget):
         super(ToolPanel, self).__init__(parent)
         self.init_ui()
         
+    def set_theme(self, theme='dark'):
+        """
+        只保留深色主题样式
+        """
+        self.setStyleSheet('''
+        QTabBar::tab:selected {
+            background: #1E90FF;
+            color: white;
+        }
+        QTabBar::tab:!selected {
+            background: #23272E;
+            color: #E0E0E0;
+        }
+        QListWidget::item:selected {
+            background: #1E90FF;
+            color: white;
+        }
+        QListWidget::item {
+            background: #23272E;
+            color: #E0E0E0;
+        }
+        QComboBox QAbstractItemView::item:selected {
+            background: #1E90FF;
+            color: white;
+        }
+        QComboBox QAbstractItemView::item {
+            background: #23272E;
+            color: #E0E0E0;
+        }
+        QGroupBox {
+            border: 1px solid #3D3D3D;
+            border-radius: 8px;
+            margin-top: 12px;
+            font-weight: bold;
+            color: #BBBBBB;
+            font-size: 22px;
+            padding-top: 8px;
+        }
+        QGroupBox::title {
+            subcontrol-origin: margin;
+            subcontrol-position: top left;
+            padding: 0px 3px;
+            left: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #E0E0E0;
+        }
+        QGroupBox QLabel, QGroupBox QCheckBox, QGroupBox QSpinBox, QGroupBox QComboBox, QGroupBox QPushButton {
+            font-size: 16px;
+            font-weight: normal;
+            color: #E0E0E0;
+        }
+        QPushButton.color-btn {
+            min-width: 28px;
+            max-width: 28px;
+            min-height: 18px;
+            max-height: 18px;
+            border-radius: 6px;
+            border: 1px solid #555;
+            padding: 0;
+        }
+        QPushButton.color-btn:hover {
+            border: 1.5px solid #1E90FF;
+        }
+        QPushButton.color-btn:pressed {
+            border: 1.5px solid #1E90FF;
+            background: #1E90FF;
+        }
+        QPushButton {
+            background-color: #2D2D2D;
+            color: #E0E0E0;
+            border: 1px solid #3D3D3D;
+            border-radius: 12px;
+            padding: 6px 16px;
+            min-height: 28px;
+            font-size: 15px;
+        }
+        QPushButton:hover {
+            background-color: #3D3D3D;
+            border: 1px solid #1E90FF;
+        }
+        QPushButton:pressed {
+            background-color: #1E90FF;
+            color: white;
+        }
+        QPushButton:disabled {
+            background-color: #23272E;
+            color: #666666;
+            border: 1px solid #333333;
+        }
+        ''')
+
     def init_ui(self):
         """
         初始化界面
         """
         layout = QVBoxLayout(self)
+        self.set_theme('dark')
         
         # 创建选项卡
         self.tab_widget = QTabWidget()
@@ -198,7 +291,9 @@ class ToolPanel(QWidget):
         # 网格颜色
         grid_layout.addWidget(QLabel("网格颜色:"), 5, 0)
         self.grid_color_btn = QPushButton()
-        self.grid_color_btn.setStyleSheet("background-color: #646464;")
+        self.grid_color_btn.setObjectName('grid_color_btn')
+        self.grid_color_btn.setProperty('class', 'color-btn')
+        self.grid_color_btn.setStyleSheet(self.grid_color_btn.styleSheet() + 'background-color: #646464;')
         self.grid_color_btn.clicked.connect(self.on_grid_color_clicked)
         grid_layout.addWidget(self.grid_color_btn, 5, 1)
         
@@ -213,7 +308,9 @@ class ToolPanel(QWidget):
         # 边界颜色
         grid_layout.addWidget(QLabel("边界颜色:"), 7, 0)
         self.border_color_btn = QPushButton()
-        self.border_color_btn.setStyleSheet("background-color: #ff0000;")
+        self.border_color_btn.setObjectName('border_color_btn')
+        self.border_color_btn.setProperty('class', 'color-btn')
+        self.border_color_btn.setStyleSheet(self.border_color_btn.styleSheet() + 'background-color: #ff0000;')
         self.border_color_btn.clicked.connect(self.on_border_color_clicked)
         grid_layout.addWidget(self.border_color_btn, 7, 1)
         
@@ -234,7 +331,9 @@ class ToolPanel(QWidget):
         # 新增：缩放手柄颜色
         grid_layout.addWidget(QLabel("缩放手柄颜色:"), 9, 0)
         self.handle_color_btn = QPushButton()
-        self.handle_color_btn.setStyleSheet("background-color: #0078d7;")
+        self.handle_color_btn.setObjectName('handle_color_btn')
+        self.handle_color_btn.setProperty('class', 'color-btn')
+        self.handle_color_btn.setStyleSheet(self.handle_color_btn.styleSheet() + 'background-color: #0078d7;')
         self.handle_color_btn.clicked.connect(self.on_handle_color_clicked)
         grid_layout.addWidget(self.handle_color_btn, 9, 1)
 
