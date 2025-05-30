@@ -44,7 +44,7 @@ class CanvasWidget(QGraphicsView):
         
         # 网格设置
         self.show_grid = True
-        self.grid_size = 5.0  # 默认网格间距为画布宽度的5%
+        self.grid_size = 256.0  # 默认网格间距为256像素
         self.grid_color = QColor(100, 100, 100, 200)  # 浅灰色，半透明
         self.grid_width = 2  # 新增：网格线宽度
         self.border_color = QColor(255, 0, 0, 200)  # 红色，稍微透明
@@ -59,14 +59,9 @@ class CanvasWidget(QGraphicsView):
         
     def get_actual_grid_size(self):
         """
-        根据百分比计算实际网格大小（像素）
+        返回网格大小（像素）
         """
-        if not self.scene:
-            return 10  # 默认值
-        scene_width = self.scene.width()
-        # 计算百分比对应的像素值，并限制在1-200像素范围内
-        pixel_size = (scene_width * self.grid_size) / 100.0
-        return pixel_size
+        return self.grid_size
         
     def drawBackground(self, painter, rect):
         """
@@ -87,47 +82,20 @@ class CanvasWidget(QGraphicsView):
             grid_pen.setWidth(self.grid_width)  # 使用可设置的宽度
             painter.setPen(grid_pen)
             
-            # 对特殊百分比值特殊处理
-            if abs(self.grid_size - 50.0) < 0.001:
-                num_grid_lines_x = 3  # 0%, 50%, 100%
-                num_grid_lines_y = 3
-            elif abs(self.grid_size - 25.0) < 0.001:
-                num_grid_lines_x = 5  # 0%, 25%, 50%, 75%, 100%
-                num_grid_lines_y = 5
-            elif abs(self.grid_size - 20.0) < 0.001:
-                num_grid_lines_x = 6  # 0%, 20%, 40%, 60%, 80%, 100%
-                num_grid_lines_y = 6
-            elif abs(self.grid_size - 10.0) < 0.001:
-                num_grid_lines_x = 11  # 0%, 10%, 20%, ..., 90%, 100%
-                num_grid_lines_y = 11
-            else:
-                # 通用公式，确保网格线数量始终正确
-                num_grid_lines_x = max(2, int(100.0 / self.grid_size) + 1)
-                num_grid_lines_y = max(2, int(100.0 / self.grid_size) + 1)
+            # 根据像素间距绘制网格线
+            grid_spacing = self.grid_size  # 网格间距（像素）
             
-            # 垂直线 - 强制第一条和最后一条在边界，其余均匀分布
-            for i in range(num_grid_lines_x):
-                # 计算当前网格线的x坐标
-                if num_grid_lines_x == 2:
-                    # 如果只有2条线，则就是边界处
-                    x_pos = scene_rect.left() if i == 0 else scene_rect.right()
-                else:
-                    # 否则均匀分布，确保第一条和最后一条在边界上
-                    x_pos = scene_rect.left() + (scene_rect.width() * i / (num_grid_lines_x - 1))
-                
-                painter.drawLine(QLineF(x_pos, rect.top(), x_pos, rect.bottom()))
+            # 绘制垂直线
+            x = scene_rect.left()
+            while x <= scene_rect.right():
+                painter.drawLine(QLineF(x, rect.top(), x, rect.bottom()))
+                x += grid_spacing
             
-            # 水平线 - 强制第一条和最后一条在边界，其余均匀分布
-            for i in range(num_grid_lines_y):
-                # 计算当前网格线的y坐标
-                if num_grid_lines_y == 2:
-                    # 如果只有2条线，则就是边界处
-                    y_pos = scene_rect.top() if i == 0 else scene_rect.bottom()
-                else:
-                    # 否则均匀分布，确保第一条和最后一条在边界上
-                    y_pos = scene_rect.top() + (scene_rect.height() * i / (num_grid_lines_y - 1))
-                
-                painter.drawLine(QLineF(rect.left(), y_pos, rect.right(), y_pos))
+            # 绘制水平线
+            y = scene_rect.top()
+            while y <= scene_rect.bottom():
+                painter.drawLine(QLineF(rect.left(), y, rect.right(), y))
+                y += grid_spacing
         
         # 绘制场景边界红色框
         border_pen = QPen(self.border_color)
@@ -193,13 +161,13 @@ class CanvasWidget(QGraphicsView):
         self.show_grid = visible
         self.viewport().update()  # 更新视图
         
-    def set_grid_size(self, percent):
+    def set_grid_size(self, pixels):
         """
-        设置网格尺寸（百分比）
+        设置网格尺寸（像素）
         """
-        # 确保百分比值为正数且在合理范围内
-        if 0.1 <= percent <= 100:
-            self.grid_size = percent
+        # 确保像素值为正数且在合理范围内
+        if pixels > 0:
+            self.grid_size = pixels
             # 计算实际网格大小（像素）
             actual_grid_size = self.get_actual_grid_size()
             # 更新所有贴图项的网格尺寸
@@ -244,7 +212,7 @@ class CanvasWidget(QGraphicsView):
         """
         return {
             "visible": self.show_grid,
-            "size": self.grid_size,  # 现在是百分比值
+            "size": self.grid_size,  # 现在是像素值
             "snap_enabled": self.snap_to_grid
         }
         
@@ -255,9 +223,9 @@ class CanvasWidget(QGraphicsView):
         if "visible" in settings:
             self.show_grid = settings["visible"]
         if "size" in settings:
-            # 确保百分比值在有效范围内
+            # 确保像素值在有效范围内
             size_value = settings["size"]
-            self.grid_size = max(0.1, min(100, size_value))
+            self.grid_size = max(1, size_value)
         if "snap_enabled" in settings:
             self.snap_to_grid = settings["snap_enabled"]
             

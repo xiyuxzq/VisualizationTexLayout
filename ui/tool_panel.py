@@ -272,11 +272,12 @@ class ToolPanel(QWidget):
         # 网格大小
         grid_layout.addWidget(QLabel("网格间距:"), 1, 0)
         self.grid_size_combo = QComboBox()
-        self.grid_size_combo.addItem("10%")
-        self.grid_size_combo.addItem("20%")
-        self.grid_size_combo.addItem("25%")
-        self.grid_size_combo.addItem("50%")
-        self.grid_size_combo.setCurrentIndex(0)  # 默认选择10%
+        self.grid_size_combo.addItem("32像素")
+        self.grid_size_combo.addItem("64像素")
+        self.grid_size_combo.addItem("128像素")
+        self.grid_size_combo.addItem("256像素")
+        self.grid_size_combo.addItem("512像素")
+        self.grid_size_combo.setCurrentIndex(3)  # 默认选择256像素
         self.grid_size_combo.currentIndexChanged.connect(self.on_grid_size_changed)
         grid_layout.addWidget(self.grid_size_combo, 1, 1)
         
@@ -517,17 +518,19 @@ class ToolPanel(QWidget):
         """
         网格间距改变事件处理
         """
-        # 根据索引确定百分比值
+        # 根据索引确定像素值
         if index == 0:
-            grid_size = 10.0  # 10%
+            grid_size = 32.0  # 32像素
         elif index == 1:
-            grid_size = 20.0  # 20%
+            grid_size = 64.0  # 64像素
         elif index == 2:
-            grid_size = 25.0  # 25%
+            grid_size = 128.0  # 128像素
         elif index == 3:
-            grid_size = 50.0  # 50%
+            grid_size = 256.0  # 256像素
+        elif index == 4:
+            grid_size = 512.0  # 512像素
         else:
-            grid_size = 10.0  # 默认10%
+            grid_size = 32.0  # 默认32像素
         
         self.grid_size_changed.emit(grid_size)
         
@@ -602,17 +605,19 @@ class ToolPanel(QWidget):
             self.grid_visible_check.setChecked(settings["visible"])
         if "size" in settings:
             size_value = settings["size"]
-            # 根据百分比值设置选择项
-            if abs(size_value - 10.0) < 0.001:
-                self.grid_size_combo.setCurrentIndex(0)  # 10%
-            elif abs(size_value - 20.0) < 0.001:
-                self.grid_size_combo.setCurrentIndex(1)  # 20%
-            elif abs(size_value - 25.0) < 0.001:
-                self.grid_size_combo.setCurrentIndex(2)  # 25%
-            elif abs(size_value - 50.0) < 0.001:
-                self.grid_size_combo.setCurrentIndex(3)  # 50%
+            # 根据像素值设置选择项
+            if abs(size_value - 32.0) < 0.001:
+                self.grid_size_combo.setCurrentIndex(0)  # 32像素
+            elif abs(size_value - 64.0) < 0.001:
+                self.grid_size_combo.setCurrentIndex(1)  # 64像素
+            elif abs(size_value - 128.0) < 0.001:
+                self.grid_size_combo.setCurrentIndex(2)  # 128像素
+            elif abs(size_value - 256.0) < 0.001:
+                self.grid_size_combo.setCurrentIndex(3)  # 256像素
+            elif abs(size_value - 512.0) < 0.001:
+                self.grid_size_combo.setCurrentIndex(4)  # 512像素
             else:
-                # 如果没有匹配项，默认选择10%
+                # 如果没有匹配项，默认选择32像素
                 self.grid_size_combo.setCurrentIndex(0)
         if "snap_enabled" in settings:
             self.snap_to_grid_check.setChecked(settings["snap_enabled"])
