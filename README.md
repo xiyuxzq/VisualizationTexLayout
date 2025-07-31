@@ -66,4 +66,4 @@ python main.py
 
 ## 版权信息
 
-© 2023 VisualizationTexLayout
+© 2025 xzq
