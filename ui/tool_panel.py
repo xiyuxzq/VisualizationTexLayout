@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QTabWidget, QPushButton,
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QPixmap, QColor
 import os
+import sys
 
 from ui.image_item import ImageItem
 
@@ -490,10 +491,18 @@ class ToolPanel(QWidget):
         """
         添加图片按钮点击事件处理
         """
+        # 获取exe所在的目录
+        if getattr(sys, 'frozen', False):
+            # 如果是打包后的exe
+            exe_dir = os.path.dirname(sys.executable)
+        else:
+            # 如果是开发环境
+            exe_dir = os.path.dirname(os.path.abspath(__file__))
+
         filepath, _ = QFileDialog.getOpenFileName(
             self,
             "选择图片",
-            "",
+            exe_dir,
             "图片文件 (*.png *.jpg *.jpeg *.bmp *.gif *.tga)"
         )
         

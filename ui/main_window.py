@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import json
 from PyQt5.QtWidgets import (QMainWindow, QAction, QFileDialog, QSplitter, 
                              QStatusBar, QMessageBox, QToolBar, QWidget,
@@ -564,9 +565,17 @@ class MainWindow(QMainWindow):
         """
         导出布局数据
         """
+        # 获取exe所在的目录
+        if getattr(sys, 'frozen', False):
+            # 如果是打包后的exe
+            exe_dir = os.path.dirname(sys.executable)
+        else:
+            # 如果是开发环境
+            exe_dir = os.path.dirname(os.path.abspath(__file__))
+
         file_dialog = QFileDialog()
         file_path, _ = file_dialog.getSaveFileName(
-            self, "导出布局", "", "布局数据 (*.json)"
+            self, "导出布局", exe_dir, "布局数据 (*.json)"
         )
         
         if file_path:
